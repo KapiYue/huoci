@@ -1,0 +1,4 @@
+.placeholder { padding-top: 120rpx; }
+.ph-card { padding: 48rpx 32rpx; text-align: center; border-radius: var(--r-md); }
+.ph-title { display: block; font-size: 32rpx; font-weight: 800; color: var(--text-1); }
+.ph-body { display: block; font-size: 22rpx; color: var(--text-3); margin-top: 16rpx; line-height: 1.7; }

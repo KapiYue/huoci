@@ -1,0 +1,116 @@
+.hc-page { height: 100vh; }
+
+/* —— 用户条 —— */
+.userbar { display: flex; align-items: center; justify-content: space-between; padding: 20rpx 0 8rpx; }
+.userbar-left { display: flex; align-items: center; gap: 20rpx; }
+.avatar { width: 80rpx; height: 80rpx; border-radius: var(--r-full); background: var(--border); }
+.name-row { display: flex; align-items: center; gap: 12rpx; }
+.name { font-size: 26rpx; font-weight: 800; color: var(--text-1); }
+.vip-chip {
+  padding: 0 12rpx; border-radius: var(--r-full); font-size: 18rpx; font-weight: 800;
+  color: #422006; background: linear-gradient(90deg, #fbbf24, #eab308);
+}
+.vip-chip.is-off { color: var(--text-3); background: var(--surface-sunk); border: 2rpx solid var(--border); }
+.greeting { display: block; font-size: 21rpx; font-weight: 700; color: var(--brand-text); margin-top: 4rpx; }
+.vip-entry {
+  padding: 12rpx 22rpx; border-radius: var(--r-full); font-size: 21rpx; font-weight: 800;
+  color: var(--brand-text); background: var(--surface);
+  border: 2rpx solid var(--border-strong); box-shadow: var(--shadow-xs);
+}
+
+.offline {
+  margin: 16rpx 0; padding: 14rpx 22rpx; border-radius: var(--r-sm);
+  font-size: 21rpx; color: var(--warn-600);
+  background: rgba(245, 158, 11, 0.1); border: 2rpx solid rgba(245, 158, 11, 0.25);
+}
+
+/* —— 今日队列 —— */
+.hero { margin: 24rpx 0; padding: 32rpx; border-radius: var(--r-xl); }
+.hero-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20rpx; }
+.hero-tag { display: flex; align-items: center; gap: 12rpx; }
+.hero-tag text { font-size: 22rpx; font-weight: 800; letter-spacing: 2rpx; color: var(--brand-text); }
+.dot { width: 16rpx; height: 16rpx; border-radius: var(--r-full); background: var(--brand-600); }
+.hero-cap { font-size: 21rpx; font-weight: 700; color: var(--text-3); }
+.hero-nums { display: flex; align-items: baseline; flex-wrap: wrap; gap: 8rpx; }
+.num { font-size: 60rpx; font-weight: 800; line-height: 1.1; }
+.num-due { color: var(--brand-text); }
+.num-new { font-size: 50rpx; color: var(--indigo-600); }
+.num-label { font-size: 22rpx; font-weight: 700; color: var(--text-2); }
+.num-sep { color: var(--text-4); margin: 0 8rpx; }
+.hero-sub { display: block; font-size: 21rpx; color: var(--text-3); margin-top: 10rpx; }
+.hero-btn { margin-top: 28rpx; }
+.hero-btn.is-done { background: var(--surface-sunk); color: var(--text-3); box-shadow: none; }
+
+/* —— 两张统计卡 —— */
+.stat-row { display: flex; gap: 20rpx; }
+.stat { flex: 1; padding: 26rpx; }
+.stat-head { display: flex; align-items: center; justify-content: space-between; }
+.stat-title { font-size: 22rpx; font-weight: 700; color: var(--text-2); }
+.stat-icon {
+  width: 44rpx; height: 44rpx; border-radius: var(--r-full); font-size: 22rpx;
+  display: flex; align-items: center; justify-content: center;
+}
+.si-amber { background: rgba(245, 158, 11, 0.15); }
+.si-green { background: rgba(16, 185, 129, 0.15); }
+.stat-value { display: flex; align-items: baseline; gap: 6rpx; margin: 12rpx 0; }
+.stat-num { font-size: 48rpx; font-weight: 800; }
+.c-amber { color: var(--warn-500); }
+.c-green { color: var(--ok-600); }
+.stat-unit { font-size: 22rpx; font-weight: 700; color: var(--text-3); }
+.week { display: flex; justify-content: space-between; padding-top: 12rpx; border-top: 2rpx solid var(--border); }
+.wd {
+  width: 34rpx; height: 34rpx; border-radius: var(--r-full);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18rpx; color: var(--text-4); background: var(--surface-sunk);
+}
+.wd.is-on { background: var(--brand-600); color: #fff; font-weight: 700; }
+.stat-foot {
+  display: flex; align-items: center; justify-content: space-between;
+  padding-top: 12rpx; border-top: 2rpx solid var(--border);
+}
+.stat-hint { font-size: 19rpx; color: var(--text-3); font-weight: 600; }
+.stat-arrow { font-size: 20rpx; color: var(--text-4); }
+
+/* —— 小目标 —— */
+.section-head {
+  display: flex; align-items: center; justify-content: space-between;
+  margin: 32rpx 4rpx 16rpx;
+}
+.section-more { font-size: 21rpx; font-weight: 800; color: var(--brand-text); }
+.task-row { display: flex; gap: 18rpx; }
+.task { flex: 1; padding: 24rpx; border-radius: var(--r-md); }
+.task-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14rpx; }
+.task-icon {
+  width: 52rpx; height: 52rpx; border-radius: var(--r-sm); font-size: 24rpx;
+  display: flex; align-items: center; justify-content: center;
+}
+.ti-purple { background: rgba(168, 85, 247, 0.1); }
+.ti-indigo { background: rgba(99, 102, 241, 0.1); }
+.task-chip { padding: 2rpx 10rpx; border-radius: 8rpx; font-size: 18rpx; font-weight: 800; }
+.tc-purple { color: var(--brand-700); background: #f3e8ff; }
+.tc-indigo { color: #3730a3; background: #e0e7ff; }
+.task-title { display: block; font-size: 23rpx; font-weight: 800; color: var(--text-1); }
+.task-sub { display: block; font-size: 19rpx; color: var(--text-3); margin-top: 4rpx; }
+
+/* —— 词条 —— */
+.word {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 26rpx; margin-bottom: 16rpx; border-radius: var(--r-md);
+}
+.word-left { flex: 1; min-width: 0; }
+.word-row { display: flex; align-items: center; gap: 14rpx; }
+.word-term { font-size: 26rpx; font-weight: 800; color: var(--text-1); }
+.word-phonetic { font-size: 20rpx; font-weight: 700; color: var(--brand-text); }
+.word-meaning {
+  display: block; font-size: 21rpx; color: var(--text-2); margin-top: 6rpx;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.word-right { text-align: right; flex: none; margin-left: 20rpx; }
+/* §6.3：来源比释义更需要被看见，所以它跟徽章并列在右侧，不是塞在角落 */
+.word-source { display: block; font-size: 19rpx; font-weight: 700; color: var(--brand-text); margin-top: 8rpx; }
+
+.empty { padding: 48rpx 32rpx; text-align: center; border-radius: var(--r-md); }
+.empty-title { display: block; font-size: 26rpx; font-weight: 800; color: var(--text-2); }
+.empty-sub { display: block; font-size: 21rpx; color: var(--text-3); margin-top: 12rpx; line-height: 1.6; }
+
+.tail { height: 40rpx; }

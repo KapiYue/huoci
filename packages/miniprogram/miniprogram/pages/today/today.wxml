@@ -1,0 +1,129 @@
+<!-- ① 今日 · App 的主屏。《执行方案》§6.1 -->
+<scroll-view class="hc-page" scroll-y enable-back-to-top refresher-enabled="{{true}}"
+             refresher-triggered="{{refreshing}}" bindrefresherrefresh="onPullRefresh">
+
+  <!-- 用户条 -->
+  <view class="userbar">
+    <view class="userbar-left" bindtap="openVip">
+      <image class="avatar" src="{{avatarUrl || defaultAvatar}}" mode="aspectFill" />
+      <view>
+        <view class="name-row">
+          <text class="name">{{displayName}}</text>
+          <view class="vip-chip {{isVip ? '' : 'is-off'}}">VIP</view>
+        </view>
+        <text class="greeting">今天又是让单词活起来的一天 ✨</text>
+      </view>
+    </view>
+    <view class="vip-entry" bindtap="openVip">会员中心 💎</view>
+  </view>
+
+  <!-- 离线 / 待补发提示。通勤断网是常态，不能一片空白也不能假装成功 -->
+  <view class="offline" wx:if="{{stale || pending > 0}}">
+    <text wx:if="{{pending > 0}}">有 {{pending}} 条复习还没同步，联网后会自动补上</text>
+    <text wx:else>当前离线，展示的是上次的数据</text>
+  </view>
+
+  <mascot message="{{mascotMessage}}" />
+
+  <!-- 今日记忆队列 -->
+  <view class="hero hc-card">
+    <view class="hero-head">
+      <view class="hero-tag"><view class="dot"></view><text>今日记忆队列</text></view>
+      <text class="hero-cap hc-mono">上限 {{cap}} 词 / 轮</text>
+    </view>
+
+    <view class="hero-nums">
+      <text class="num num-due hc-mono">{{summary.due_count}}</text>
+      <text class="num-label">个词需要复习</text>
+      <text class="num-sep">·</text>
+      <text class="num num-new hc-mono">{{summary.new_count}}</text>
+      <text class="num-label">个新词待学习</text>
+    </view>
+    <text class="hero-sub">遵循 SM-2 记忆曲线，先复习到期词，再补充高频场景新词</text>
+
+    <button class="hc-primary-btn hero-btn {{total === 0 ? 'is-done' : ''}}" bindtap="startStudy">
+      {{total === 0 ? '今天的队列已清空 🎉' : '开始今日学习（' + total + ' 词）'}}
+    </button>
+  </view>
+
+  <!-- 连续学习 / 已激活 -->
+  <view class="stat-row">
+    <view class="stat hc-card">
+      <view class="stat-head">
+        <text class="stat-title">连续学习</text>
+        <view class="stat-icon si-amber">🔥</view>
+      </view>
+      <view class="stat-value">
+        <text class="stat-num hc-mono c-amber">{{summary.streak_days}}</text><text class="stat-unit">天</text>
+      </view>
+      <view class="week">
+        <view class="wd {{index < summary.streak_days ? 'is-on' : ''}}"
+              wx:for="{{weekDays}}" wx:key="*this">{{item}}</view>
+      </view>
+    </view>
+
+    <view class="stat hc-card" bindtap="openWords">
+      <view class="stat-head">
+        <text class="stat-title">已经激活活词</text>
+        <view class="stat-icon si-green">✨</view>
+      </view>
+      <view class="stat-value">
+        <text class="stat-num hc-mono c-green">{{summary.activated_count}}</text><text class="stat-unit">个</text>
+      </view>
+      <view class="stat-foot">
+        <text class="stat-hint">稳固期 ≥ 21 天</text>
+        <text class="stat-arrow">→</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 今日小目标 -->
+  <view class="section-head">
+    <text class="hc-section-title">今日小目标 · 场景触达</text>
+  </view>
+  <view class="task-row">
+    <view class="task hc-card" bindtap="openReader">
+      <view class="task-head">
+        <view class="task-icon ti-purple">📖</view>
+        <text class="task-chip tc-purple">P3 阅读器</text>
+      </view>
+      <text class="task-title">贴文章 · 点词收录</text>
+      <text class="task-sub">自动绑定原句与出处</text>
+    </view>
+    <view class="task hc-card" bindtap="openSearch">
+      <view class="task-head">
+        <view class="task-icon ti-indigo">🔍</view>
+        <text class="task-chip tc-indigo">查词抓取</text>
+      </view>
+      <text class="task-title">精准查词入库</text>
+      <text class="task-sub">一键加入我的活词</text>
+    </view>
+  </view>
+
+  <!-- 最近遇到的词 -->
+  <view class="section-head">
+    <text class="hc-section-title">最近遇到的词</text>
+    <text class="section-more" bindtap="openWords">查看全部（{{summary.total_words}}）→</text>
+  </view>
+
+  <view class="empty hc-card" wx:if="{{recent.length === 0}}">
+    <text class="empty-title">还没有词</text>
+    <text class="empty-sub">去「查词」搜一个，或用阅读器贴一篇你自己的文章点词收录</text>
+  </view>
+
+  <view class="word hc-card" wx:for="{{recent}}" wx:key="wordId" bindtap="openWords">
+    <view class="word-left">
+      <view class="word-row">
+        <text class="word-term">{{item.term}}</text>
+        <text class="word-phonetic hc-mono">{{item.phonetic}}</text>
+      </view>
+      <text class="word-meaning">{{item.meaning}}</text>
+    </view>
+    <view class="word-right">
+      <view class="hc-badge st-{{item.status}}">{{item.badge}} {{item.statusLabel}}</view>
+      <text class="word-source">{{item.contextSource}}</text>
+    </view>
+  </view>
+
+  <view class="tail"></view>
+</scroll-view>

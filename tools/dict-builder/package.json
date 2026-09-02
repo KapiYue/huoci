@@ -1,0 +1,13 @@
+{
+  "name": "@huoci/dict-builder",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "活词 P1 词典管线：ECDICT 清洗 + 五张 CC BY-SA 词表词元对齐 + 词包产出 + 统计报告",
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "doctor": "node src/cli.mjs doctor",
+    "demo": "node src/cli.mjs demo",
+    "all": "node src/cli.mjs all"
+  }
+}

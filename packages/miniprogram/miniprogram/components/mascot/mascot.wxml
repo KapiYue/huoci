@@ -1,0 +1,12 @@
+<view class="mascot">
+  <view class="face">
+    <view class="eye eye-l"></view>
+    <view class="eye eye-r"></view>
+    <view class="cheek cheek-l"></view>
+    <view class="cheek cheek-r"></view>
+    <view class="mouth"></view>
+  </view>
+  <view class="bubble">
+    <text class="bubble-text">{{message}}</text>
+  </view>
+</view>

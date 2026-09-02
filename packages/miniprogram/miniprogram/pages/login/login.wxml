@@ -1,0 +1,110 @@
+<!-- S0 · 第 0 屏：身份（两个并列入口，不是分叉流程）《原型输入》§3 S0 -->
+<view class="hc-page login">
+
+  <!-- 品牌头 -->
+  <view class="brand">
+    <view class="brand-mark">活</view>
+    <view class="brand-text">
+      <view class="brand-row">
+        <text class="brand-name">活词 ActiveWords</text>
+        <text class="brand-chip">微信小程序</text>
+      </view>
+      <text class="brand-slogan">撞见生词 · 智能捕获 · 永久激活</text>
+    </view>
+    <text class="brand-star">✦</text>
+  </view>
+
+  <mascot message="欢迎来到活词！登录后我们将根据你的工作场景，定制专属高频激活词库 ✨" />
+
+  <!-- 三张价值卡 -->
+  <view class="value-row">
+    <view class="value-card">
+      <view class="value-icon vi-purple">🧭</view>
+      <text class="value-title">场景撞词</text>
+      <text class="value-sub">带原句入库</text>
+    </view>
+    <view class="value-card">
+      <view class="value-icon vi-green">⚡</view>
+      <text class="value-title">三档自评</text>
+      <text class="value-sub">精准抗遗忘</text>
+    </view>
+    <view class="value-card">
+      <view class="value-icon vi-pink">📖</view>
+      <text class="value-title">多端同数据</text>
+      <text class="value-sub">词鲸一键互联</text>
+    </view>
+  </view>
+
+  <!-- 登录方式切换 -->
+  <view class="seg">
+    <view class="seg-item {{tab === 'wechat' ? 'is-on seg-wechat' : ''}}" bindtap="switchWechat">微信官方登录</view>
+    <view class="seg-item {{tab === 'cijing' ? 'is-on seg-cijing' : ''}}" bindtap="switchCijing">词鲸账号同步</view>
+  </view>
+
+  <!-- 路径一：微信一键登录 -->
+  <block wx:if="{{tab === 'wechat'}}">
+    <view class="panel">
+      <view class="wx-badge">💬</view>
+      <text class="panel-title">微信官方授权快捷登录</text>
+      <text class="panel-sub">新用户免密直登，自动关联微信头像与学习打卡</text>
+    </view>
+    <button class="wechat-btn {{loading ? 'is-busy' : ''}}" bindtap="openAuthDialog" loading="{{loading}}">
+      微信一键快捷登录
+    </button>
+  </block>
+
+  <!-- 路径二：老词鲸用户（邮箱 + 密码）。不提供邮箱注册。 -->
+  <block wx:else>
+    <view class="form">
+      <text class="label">词鲸注册邮箱</text>
+      <input class="field" type="text" value="{{email}}" bindinput="onEmail"
+             placeholder="name@example.com" placeholder-class="ph" confirm-type="next" />
+      <text class="label">密码</text>
+      <input class="field" password value="{{password}}" bindinput="onPassword"
+             placeholder="请输入词鲸账号密码" placeholder-class="ph" confirm-type="done"
+             bindconfirm="loginWithPassword" />
+      <text class="err" wx:if="{{error}}">{{error}}</text>
+      <button class="cijing-btn" bindtap="loginWithPassword" loading="{{loading}}">绑定并同步词鲸数据</button>
+      <text class="form-hint">没有词鲸账号？请用上方「微信一键登录」，小程序不提供邮箱注册。</text>
+    </view>
+  </block>
+
+  <!-- 协议 + 游客 -->
+  <view class="bottom">
+    <view class="agree" bindtap="toggleAgree">
+      <view class="checkbox {{agreed ? 'is-on' : ''}}">{{agreed ? '✓' : ''}}</view>
+      <text class="agree-text">已阅读并同意
+        <text class="link" catchtap="openTerms">《用户服务协议》</text>与<text class="link" catchtap="openPrivacy">《隐私保护指引》</text>
+      </text>
+    </view>
+    <view class="guest" bindtap="enterGuest">免登录 · 游客模式快速体验 →</view>
+  </view>
+
+  <!-- 微信授权弹层：头像 + 昵称 -->
+  <view class="mask" wx:if="{{showAuth}}" bindtap="closeAuthDialog" catchtouchmove="noop">
+    <view class="sheet" catchtap="noop">
+      <view class="sheet-head">
+        <view class="sheet-mark">活</view>
+        <view>
+          <text class="sheet-title">活词 ActiveWords 申请</text>
+          <text class="sheet-sub">获取你的昵称、头像用于生成学习名片</text>
+        </view>
+      </view>
+
+      <text class="sheet-label">选择头像</text>
+      <button class="avatar-btn" open-type="chooseAvatar" bind:chooseavatar="onChooseAvatar">
+        <image class="avatar" src="{{avatarUrl || defaultAvatar}}" mode="aspectFill" />
+        <text class="avatar-hint">点击选择微信头像</text>
+      </button>
+
+      <text class="sheet-label">学习昵称</text>
+      <input class="field" type="nickname" value="{{nickname}}" bindinput="onNickname"
+             placeholder="点击填写昵称" placeholder-class="ph" />
+
+      <view class="sheet-actions">
+        <view class="btn-ghost" bindtap="closeAuthDialog">拒绝</view>
+        <button class="btn-ok" bindtap="confirmWechatLogin" loading="{{loading}}">允许并进入</button>
+      </view>
+    </view>
+  </view>
+</view>

@@ -1,0 +1,21 @@
+{
+  "name": "huoci",
+  "version": "0.1.0",
+  "private": true,
+  "description": "活词 · 词以致用 —— 微信小程序（词鲸的第三个正式端）",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "sync:shared": "npm run sync:shared -w @huoci/miniprogram"
+  },
+  "devDependencies": {
+    "@types/node": "^26.4.0",
+    "typescript": "^5.8.2"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

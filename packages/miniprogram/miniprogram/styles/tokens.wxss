@@ -1,0 +1,120 @@
+/* 设计令牌 —— 从 docs/prototype 的 Tailwind 类抽出，是原型配色的唯一事实来源。
+ * 深色走 prefers-color-scheme（app.json 里 darkmode:true），不做手动切换开关。
+ * 单位约定：原型的 1px ≈ 小程序的 2rpx（750rpx 设计宽 = 375pt）。 */
+
+page {
+  --brand-500: #a855f7;
+  --brand-600: #9333ea;
+  --brand-700: #7e22ce;
+  --brand-800: #6b21a8;
+  --indigo-500: #6366f1;
+  --indigo-600: #4f46e5;
+  --pink-500: #ec4899;
+
+  --ok-500: #10b981;
+  --ok-600: #059669;
+  --warn-500: #f59e0b;
+  --warn-600: #d97706;
+  --danger-500: #f43f5e;
+  --cyan-500: #06b6d4;
+  --wechat-500: #10b981;
+  --wechat-600: #0d9488;
+
+  --bg-top: #e8eefd;
+  --bg-mid: #f1edfe;
+  --bg-bottom: #faf8ff;
+  --surface: #ffffff;
+  --surface-soft: rgba(255, 255, 255, 0.9);
+  --surface-sunk: #f8fafc;
+  --border: #f3e8ff;
+  --border-strong: #e9d5ff;
+  --text-1: #0f172a;
+  --text-2: #334155;
+  --text-3: #64748b;
+  --text-4: #94a3b8;
+  --brand-text: #7e22ce;
+
+  --shadow-card: 0 16rpx 60rpx rgba(147, 51, 234, 0.09);
+  --shadow-btn: 0 12rpx 32rpx rgba(147, 51, 234, 0.3);
+  --shadow-xs: 0 2rpx 8rpx rgba(15, 23, 42, 0.05);
+
+  --r-sm: 16rpx;
+  --r-md: 24rpx;
+  --r-lg: 32rpx;
+  --r-xl: 44rpx;
+  --r-full: 999rpx;
+
+  --st-captured-fg: #7e22ce;
+  --st-captured-bg: #f3e8ff;
+  --st-captured-bd: #e9d5ff;
+  --st-learning-fg: #1d4ed8;
+  --st-learning-bg: #dbeafe;
+  --st-learning-bd: #bfdbfe;
+  --st-remembered-fg: #0e7490;
+  --st-remembered-bg: #cffafe;
+  --st-remembered-bd: #a5f3fc;
+  --st-activated-fg: #065f46;
+  --st-activated-bg: #d1fae5;
+  --st-activated-bd: #6ee7b7;
+  --st-mastered-fg: #92400e;
+  --st-mastered-bg: #fef3c7;
+  --st-mastered-bd: #fcd34d;
+
+  --rate-1-fg: #9f1239;
+  --rate-1-bg: rgba(255, 241, 242, 0.85);
+  --rate-1-bd: #fecdd3;
+  --rate-2-fg: #92400e;
+  --rate-2-bg: rgba(255, 251, 235, 0.85);
+  --rate-2-bd: #fde68a;
+  --rate-3-fg: #065f46;
+  --rate-3-bg: rgba(236, 253, 245, 0.85);
+  --rate-3-bd: #a7f3d0;
+}
+
+@media (prefers-color-scheme: dark) {
+  page {
+    --bg-top: #020617;
+    --bg-mid: #0b0518;
+    --bg-bottom: #020617;
+    --surface: rgba(15, 23, 42, 0.9);
+    --surface-soft: rgba(15, 23, 42, 0.7);
+    --surface-sunk: rgba(30, 41, 59, 0.4);
+    --border: rgba(107, 33, 168, 0.4);
+    --border-strong: rgba(126, 34, 206, 0.6);
+    --text-1: #f1f5f9;
+    --text-2: #cbd5e1;
+    --text-3: #94a3b8;
+    --text-4: #64748b;
+    --brand-text: #d8b4fe;
+
+    --shadow-card: 0 16rpx 60rpx rgba(2, 6, 23, 0.5);
+    --shadow-btn: 0 12rpx 32rpx rgba(88, 28, 135, 0.5);
+    --shadow-xs: 0 2rpx 8rpx rgba(2, 6, 23, 0.4);
+
+    --st-captured-fg: #d8b4fe;
+    --st-captured-bg: rgba(59, 7, 100, 0.6);
+    --st-captured-bd: rgba(107, 33, 168, 0.6);
+    --st-learning-fg: #93c5fd;
+    --st-learning-bg: rgba(23, 37, 84, 0.6);
+    --st-learning-bd: rgba(30, 64, 175, 0.6);
+    --st-remembered-fg: #67e8f9;
+    --st-remembered-bg: rgba(8, 51, 68, 0.6);
+    --st-remembered-bd: rgba(14, 116, 144, 0.6);
+    --st-activated-fg: #6ee7b7;
+    --st-activated-bg: rgba(2, 44, 34, 0.8);
+    --st-activated-bd: rgba(4, 120, 87, 0.8);
+    --st-mastered-fg: #fcd34d;
+    --st-mastered-bg: rgba(69, 26, 3, 0.8);
+    --st-mastered-bd: rgba(180, 83, 9, 0.8);
+
+    --rate-1-fg: #fda4af;
+    --rate-1-bg: rgba(76, 5, 25, 0.4);
+    --rate-1-bd: rgba(159, 18, 57, 0.5);
+    --rate-2-fg: #fcd34d;
+    --rate-2-bg: rgba(69, 26, 3, 0.4);
+    --rate-2-bd: rgba(146, 64, 14, 0.5);
+    --rate-3-fg: #6ee7b7;
+    --rate-3-bg: rgba(2, 44, 34, 0.4);
+    --rate-3-bd: rgba(6, 95, 70, 0.5);
+  }
+}
