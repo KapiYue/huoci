@@ -1,0 +1,97 @@
+<!-- ② 学习卡片（push 页）。《执行方案》§6.2 —— P2 的命门 -->
+<view class="study">
+
+  <!-- 顶部进度 -->
+  <view class="topbar" wx:if="{{!done}}">
+    <view class="progress">
+      <text class="progress-text hc-mono">{{index + 1}} / {{queue.length}}</text>
+      <view class="bar"><view class="bar-fill" style="width:{{percent}}%"></view></view>
+    </view>
+    <view class="hc-badge st-{{card.status}}">{{card.badge}} {{card.statusLabel}}</view>
+  </view>
+
+  <!-- 卡片 -->
+  <view class="card hc-card" wx:if="{{!done}}">
+    <view class="card-body">
+      <view class="term-row">
+        <view>
+          <text class="term">{{card.term}}</text>
+          <view class="phonetic-row">
+            <text class="phonetic hc-mono">{{card.phonetic}}</text>
+            <view class="speak" bindtap="playAudio" wx:if="{{card.audioUrl}}">🔊</view>
+          </view>
+        </view>
+        <text class="pos hc-mono" wx:if="{{card.pos}}">{{card.pos}}</text>
+      </view>
+
+      <view class="divider"></view>
+
+      <!-- capture 词：原句 + 来源。这是活词全部差异化的落点 -->
+      <block wx:if="{{card.contextSentence}}">
+        <view class="ctx-label">🧭 真实撞见原句</view>
+        <view class="ctx">"{{card.contextSentence}}"</view>
+        <view class="ctx-source"><view class="dot"></view><text>{{card.contextSource}}</text></view>
+      </block>
+
+      <!-- 底座词：没有原句就**不编造例句**。这个差异是刻意的 -->
+      <view class="base-note" wx:else>
+        <text class="base-title">🏷️ {{card.contextSource}}</text>
+        <text class="base-body">此词来自系统基础语料。想让卡片带上真实原句？去阅读器贴一篇你自己的文章点词收录。</text>
+      </view>
+
+      <!-- 背面 -->
+      <view class="answer" wx:if="{{revealed}}">
+        <text class="meaning">{{card.meaning}}</text>
+        <view class="example" wx:if="{{card.exampleEn}}">
+          <text class="ex-en">"{{card.exampleEn}}"</text>
+          <text class="ex-zh" wx:if="{{card.exampleZh}}">{{card.exampleZh}}</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 底部操作 -->
+    <view class="card-foot">
+      <button class="hc-primary-btn" wx:if="{{!revealed}}" bindtap="reveal">显示答案</button>
+      <view class="rates" wx:else>
+        <view class="rate rate-{{item.rating}}" wx:for="{{ratings}}" wx:key="rating"
+              data-rating="{{item.rating}}" bindtap="rate">
+          <text class="rate-emoji">{{item.emoji}}</text>
+          <text class="rate-label">{{item.label}}</text>
+          <text class="rate-hint hc-mono">{{item.hint}}</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 完成页 -->
+  <view class="finish" wx:if="{{done}}">
+    <view class="finish-mark">✓</view>
+    <text class="finish-title">今日复习完成！</text>
+    <text class="finish-sub">完成 {{reviewed}} 个词的激活循环，保持记忆稳固</text>
+
+    <view class="finish-stats">
+      <view class="fs hc-card">
+        <text class="fs-label">已复习词汇</text>
+        <text class="fs-num hc-mono c-purple">{{reviewed}}</text>
+      </view>
+      <view class="fs hc-card">
+        <text class="fs-label">新激活活词</text>
+        <text class="fs-num hc-mono c-green">+{{activated}}</text>
+      </view>
+    </view>
+
+    <view class="finish-note" wx:if="{{pending > 0}}">
+      有 {{pending}} 条还没发出去，联网后会自动补上，不会丢。
+    </view>
+
+    <button class="hc-primary-btn finish-btn" bindtap="back">返回今日主页</button>
+  </view>
+
+  <!-- 空队列 -->
+  <view class="finish" wx:if="{{!done && queue.length === 0 && !loading}}">
+    <view class="finish-mark">🌙</view>
+    <text class="finish-title">今天没有要学的了</text>
+    <text class="finish-sub">明天这个时候，到期的词会自己排好队等你</text>
+    <button class="hc-primary-btn finish-btn" bindtap="back">返回今日主页</button>
+  </view>
+</view>

@@ -1,0 +1,28 @@
+node_modules/
+dist/
+build/
+.DS_Store
+*.log
+
+# dict-builder：原始词典与中间产物体积巨大，不进仓库
+tools/dict-builder/data/
+tools/dict-builder/out/
+tools/dict-builder/reports/unmatched/
+
+# 合规材料截图（正本在 ../huoci-data/）
+docs/assets/
+
+# 密钥
+.env
+.env.*
+!.env.example
+*.pem
+*.p12
+*.key
+
+# 微信开发者工具
+packages/miniprogram/project.private.config.json
+
+# Flutter
+packages/app/.dart_tool/
+packages/app/build/

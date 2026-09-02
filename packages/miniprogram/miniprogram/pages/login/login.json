@@ -1,0 +1,7 @@
+{
+  "navigationBarTitleText": "活词",
+  "navigationStyle": "default",
+  "usingComponents": {
+    "mascot": "../../components/mascot/mascot"
+  }
+}

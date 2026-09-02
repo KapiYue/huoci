@@ -1,0 +1,6 @@
+<view class="hc-page placeholder">
+  <view class="ph-card hc-card">
+    <text class="ph-title">查词</text>
+    <text class="ph-body">{{note}}</text>
+  </view>
+</view>

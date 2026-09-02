@@ -1,0 +1,39 @@
+.mascot { display: flex; align-items: center; gap: 16rpx; }
+
+.face {
+  position: relative; flex: none;
+  width: 88rpx; height: 88rpx; border-radius: 36rpx;
+  background: linear-gradient(160deg, #c4b5fd, #a78bfa 60%, #8b5cf6);
+  box-shadow: 0 8rpx 20rpx rgba(139, 92, 246, 0.28);
+}
+.eye {
+  position: absolute; top: 34rpx; width: 12rpx; height: 16rpx;
+  border-radius: 8rpx; background: #1e1b4b;
+}
+.eye-l { left: 24rpx; }
+.eye-r { right: 24rpx; }
+.cheek {
+  position: absolute; top: 52rpx; width: 14rpx; height: 8rpx;
+  border-radius: var(--r-full); background: rgba(244, 114, 182, 0.65);
+}
+.cheek-l { left: 14rpx; }
+.cheek-r { right: 14rpx; }
+.mouth {
+  position: absolute; top: 54rpx; left: 50%; margin-left: -10rpx;
+  width: 20rpx; height: 10rpx;
+  border-bottom: 3rpx solid #1e1b4b; border-radius: 0 0 20rpx 20rpx;
+}
+
+.bubble {
+  position: relative; flex: 1;
+  padding: 20rpx 24rpx;
+  background: var(--surface); border: 2rpx solid var(--border);
+  border-radius: var(--r-md); box-shadow: var(--shadow-xs);
+}
+.bubble::before {
+  content: ''; position: absolute; left: -12rpx; top: 34rpx;
+  width: 20rpx; height: 20rpx; transform: rotate(45deg);
+  background: var(--surface);
+  border-left: 2rpx solid var(--border); border-bottom: 2rpx solid var(--border);
+}
+.bubble-text { font-size: 22rpx; line-height: 1.65; color: var(--text-2); }

@@ -1,0 +1,204 @@
+{
+  "generatedAt": "2026-09-01T11:54:19.079Z",
+  "ingest": {
+    "rows": 1320165,
+    "malformed": 2082399,
+    "withPhonetic": 285168,
+    "withTranslation": 1309291,
+    "withFrq": 42231,
+    "withBnc": 45443,
+    "withExchange0": 166668,
+    "tagged": 14936
+  },
+  "exam": {
+    "cet4": {
+      "raw": 3849,
+      "lemma": 3812,
+      "net": 1338,
+      "days": 67,
+      "frqMissing": 0.0158482722785139
+    },
+    "cet6": {
+      "raw": 5407,
+      "lemma": 5339,
+      "net": 2578,
+      "days": 129,
+      "frqMissing": 0.015350471610874793
+    },
+    "ky": {
+      "raw": 4801,
+      "lemma": 4754,
+      "net": 1981,
+      "days": 100,
+      "frqMissing": 0.008539887523432618
+    },
+    "ielts": {
+      "raw": 5038,
+      "lemma": 4757,
+      "net": 2351,
+      "days": 118,
+      "frqMissing": 0.0813815005954744
+    },
+    "toefl": {
+      "raw": 6970,
+      "lemma": 6739,
+      "net": 4458,
+      "days": 223,
+      "frqMissing": 0.02496413199426112
+    },
+    "gre": {
+      "raw": 7504,
+      "lemma": 7380,
+      "net": 6179,
+      "days": 309,
+      "frqMissing": 0.06116737739872068
+    },
+    "zk": {
+      "raw": 1602,
+      "lemma": 1576,
+      "net": 316,
+      "days": 16,
+      "frqMissing": 0.03495630461922597
+    },
+    "gk": {
+      "raw": 3677,
+      "lemma": 3576,
+      "net": 1159,
+      "days": 58,
+      "frqMissing": 0.03045961381561055
+    }
+  },
+  "overlap": {
+    "cet4->cet6": {
+      "inter": 1206,
+      "of": 1338
+    },
+    "cet4->ky": {
+      "inter": 1098,
+      "of": 1338
+    },
+    "cet4->ielts": {
+      "inter": 685,
+      "of": 1338
+    },
+    "cet4->toefl": {
+      "inter": 671,
+      "of": 1338
+    },
+    "cet4->gre": {
+      "inter": 376,
+      "of": 1338
+    },
+    "cet6->cet4": {
+      "inter": 1206,
+      "of": 2578
+    },
+    "cet6->ky": {
+      "inter": 1635,
+      "of": 2578
+    },
+    "cet6->ielts": {
+      "inter": 1305,
+      "of": 2578
+    },
+    "cet6->toefl": {
+      "inter": 1431,
+      "of": 2578
+    },
+    "cet6->gre": {
+      "inter": 1044,
+      "of": 2578
+    },
+    "ky->cet4": {
+      "inter": 1098,
+      "of": 1981
+    },
+    "ky->cet6": {
+      "inter": 1635,
+      "of": 1981
+    },
+    "ky->ielts": {
+      "inter": 1229,
+      "of": 1981
+    },
+    "ky->toefl": {
+      "inter": 1202,
+      "of": 1981
+    },
+    "ky->gre": {
+      "inter": 858,
+      "of": 1981
+    },
+    "ielts->cet4": {
+      "inter": 685,
+      "of": 2351
+    },
+    "ielts->cet6": {
+      "inter": 1305,
+      "of": 2351
+    },
+    "ielts->ky": {
+      "inter": 1229,
+      "of": 2351
+    },
+    "ielts->toefl": {
+      "inter": 1422,
+      "of": 2351
+    },
+    "ielts->gre": {
+      "inter": 1289,
+      "of": 2351
+    },
+    "toefl->cet4": {
+      "inter": 671,
+      "of": 4458
+    },
+    "toefl->cet6": {
+      "inter": 1431,
+      "of": 4458
+    },
+    "toefl->ky": {
+      "inter": 1202,
+      "of": 4458
+    },
+    "toefl->ielts": {
+      "inter": 1422,
+      "of": 4458
+    },
+    "toefl->gre": {
+      "inter": 2388,
+      "of": 4458
+    },
+    "gre->cet4": {
+      "inter": 376,
+      "of": 6179
+    },
+    "gre->cet6": {
+      "inter": 1044,
+      "of": 6179
+    },
+    "gre->ky": {
+      "inter": 858,
+      "of": 6179
+    },
+    "gre->ielts": {
+      "inter": 1289,
+      "of": 6179
+    },
+    "gre->toefl": {
+      "inter": 2388,
+      "of": 6179
+    }
+  },
+  "base": {
+    "count": 4553,
+    "bandHist": [
+      759,
+      759,
+      759,
+      759,
+      759,
+      758
+    ]
+  }
+}

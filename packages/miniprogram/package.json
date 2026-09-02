@@ -1,0 +1,13 @@
+{
+  "name": "@huoci/miniprogram",
+  "version": "0.1.0",
+  "private": true,
+  "description": "活词 微信小程序（原生 + TypeScript）",
+  "scripts": {
+    "sync:shared": "node scripts/sync-shared.mjs",
+    "typecheck": "npm run sync:shared && tsc -p tsconfig.json --noEmit"
+  },
+  "devDependencies": {
+    "miniprogram-api-typings": "^5.2.3"
+  }
+}

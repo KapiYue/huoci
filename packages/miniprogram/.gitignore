@@ -1,0 +1,4 @@
+project.private.config.json
+miniprogram/config/env.ts
+miniprogram/shared/
+miniprogram/miniprogram_npm/

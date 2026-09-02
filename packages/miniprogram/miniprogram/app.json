@@ -1,0 +1,36 @@
+{
+  "pages": [
+    "pages/login/login",
+    "pages/today/today",
+    "pages/study/study",
+    "pages/words/words",
+    "pages/search/search",
+    "pages/profile/profile"
+  ],
+  "window": {
+    "navigationBarTitleText": "活词",
+    "navigationBarBackgroundColor": "#f1edfe",
+    "navigationBarTextStyle": "black",
+    "backgroundColor": "#faf8ff",
+    "backgroundTextStyle": "light",
+    "enablePullDownRefresh": false
+  },
+  "tabBar": {
+    "custom": true,
+    "color": "#64748b",
+    "selectedColor": "#7e22ce",
+    "backgroundColor": "#ffffff",
+    "borderStyle": "white",
+    "list": [
+      { "pagePath": "pages/today/today", "text": "今日" },
+      { "pagePath": "pages/words/words", "text": "我的生词" },
+      { "pagePath": "pages/search/search", "text": "查词" },
+      { "pagePath": "pages/profile/profile", "text": "我的" }
+    ]
+  },
+  "darkmode": true,
+  "style": "v2",
+  "renderer": "webview",
+  "lazyCodeLoading": "requiredComponents",
+  "sitemapLocation": "sitemap.json"
+}
