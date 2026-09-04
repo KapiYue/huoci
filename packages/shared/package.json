@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "三端共享：词状态机（§3.1）、自评映射（§4.3）、埋点常量（§7）、领域类型",
+  "description": "三端共享：词状态机（design.md §8）、自评映射（§9.3）、埋点常量（§15）、领域类型",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": { ".": { "types": "./dist/index.d.ts", "default": "./dist/index.js" } },
