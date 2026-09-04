@@ -1,7 +1,7 @@
 -- ⚠️ 这个文件属于 **cijing 仓库**，放在这里只是因为改动是活词提出的。
 --    落地前请拷到 `cijing/supabase/migrations/202609010002_review_idempotency.sql` 再 db push。
 --
--- review_events 幂等键。《执行方案》§4.0 ①、§14.1 T1-c。
+-- review_events 幂等键。`design.md` §9.0 ①、§14.1 T1-c。
 --
 -- 为什么词鲸也需要它：小程序在通勤/地铁场景必须做离线写队列，补发时网络抖动会重放，
 -- 同一次复习被算两遍，interval / ease 直接算错。现有 apply_review 没有任何幂等键。
