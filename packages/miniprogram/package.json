@@ -5,7 +5,11 @@
   "description": "活词 微信小程序（原生 + TypeScript）",
   "scripts": {
     "sync:shared": "node scripts/sync-shared.mjs",
-    "typecheck": "npm run sync:shared && tsc -p tsconfig.json --noEmit"
+    "sync:wordpack": "node scripts/sync-wordpack.mjs",
+    "sync": "npm run sync:shared && npm run sync:wordpack",
+    "typecheck": "npm run sync && tsc -p tsconfig.json --noEmit",
+    "check": "node scripts/check-static.mjs",
+    "verify": "npm run typecheck && npm run check"
   },
   "devDependencies": {
     "miniprogram-api-typings": "^5.2.3"
