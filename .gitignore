@@ -9,8 +9,16 @@ tools/dict-builder/data/
 tools/dict-builder/out/
 tools/dict-builder/reports/unmatched/
 
-# 合规材料截图（正本在 ../huoci-data/）
-docs/assets/
+# ── docs/ 整个不进仓库 ────────────────────────────────────────────
+# 本仓库代码公开，但 docs/ 全是单人开发的私人工作文档：设计稿、备案手册、
+# 微信合规、部署运维手册、软著材料，含真实姓名 / 统一社会信用代码 /
+# 生产服务器 IP。没有第二个读者，放进 git 只增加暴露面。
+# ⚠️ 代码注释里引用的 `design.md §x.y` 对外部读者是悬空的，这是已知取舍。
+docs/
+
+# 证书材料。私钥已被下方 *.key / *.pem 挡住，这两类补上以防整目录被 add
+*.crt
+*.csr
 
 # 密钥
 .env
