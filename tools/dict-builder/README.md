@@ -81,12 +81,12 @@ NGSL 系列是 **lemma 列表**，ECDICT 是**词形表**。一定会有对不�
 **规则：不允许静默丢弃。** 失败清单按表分开写进 `reports/unmatched/`，
 合并报会把 GRE 的高失败率掩盖在 CET4 的低失败率里。
 
-**《执行方案》§9 W1 周六的任务就是人工过这份清单——不过完不进 W2。**
+**人工过完这份清单才算 P1 收尾**（`design.md` §21.1「词元对齐失败被静默吞掉」）。
 
 ## 已知数据缺口
 
 ECDICT 只有一个 `phonetic` 字段，**没有 uk/us 之分**，
-而《技术方案》§2.1 的 `word` 表设计了 `phonetic_uk` / `phonetic_us`。
+而 `design.md` §9 的 `word` 表设计了 `phonetic_uk` / `phonetic_us`（来源待定，见 §22.2 ④）。
 需要另找来源，或在 `tools/tts-batch` 生成音频时一并产出。报告 §0 会提醒。
 
 ## 许可证义务

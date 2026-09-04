@@ -6,7 +6,7 @@
 //
 // ⚠️ 这是整条管线的核心：NGSL/BSL 是 **lemma 列表**，ECDICT 是 **词形表**。
 //    `run` 必须覆盖 running / ran / runs，靠的就是这个字段。
-//    对不上的必须进 unmatched 报告，不允许静默丢弃（《技术方案》§5.1）。
+//    对不上的必须进 unmatched 报告，不允许静默丢弃（`design.md` §13.1）。
 
 export const INFLECTION_KEYS = ['p', 'd', 'i', '3', 'r', 't', 's'];
 

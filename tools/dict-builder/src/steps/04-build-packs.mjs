@@ -18,23 +18,30 @@ export async function buildPacks() {
   const bitOf = {};
   for (const l of LISTS) if (l.base) for (const w of lists[l.id] || []) bitOf[w] = (bitOf[w] || 0) | l.bit;
 
+  // 第 4 列 frqRank：首启播种要「按 frq 升序取前 20」（`design.md` §5.3），band 只有 6 档，
+  // 段内还得再排一次序，所以排名必须随包发下去。缺值写 0，消费侧按「排到最后」处理。
   const baseWords = baseItems
-    .map((it) => [it.spelling, bands.get(it.spelling), bitOf[it.spelling] || 0])
+    .map((it) => [
+      it.spelling,
+      bands.get(it.spelling),
+      bitOf[it.spelling] || 0,
+      Number.isFinite(it.frq) ? it.frq : 0,
+    ])
     .sort((a, b) => a[1] - b[1] || a[0].localeCompare(b[0]));
 
   const basePack = {
     id: 'base', name: '通用底座 + 职场底座', version: VERSION,
     generatedAt: new Date().toISOString().slice(0, 10),
     bandCount: BAND_COUNT,
-    schema: ['spelling', 'band(1-6)', 'sourceBits(1=NGSL,2=BSL)'],
+    schema: ['spelling', 'band(1-6)', 'sourceBits(1=NGSL,2=BSL)', 'frqRank(0=缺值)'],
     ...ATTRIBUTION,
     count: baseWords.length,
     words: baseWords,
   };
   writeJson(join(PATHS.packs, 'base.json'), basePack, false);
   const kb = (JSON.stringify(basePack).length / 1024).toFixed(0);
-  log(`base.json  ${fmt(baseWords.length)} 词  ${kb} KB（主包预算 ~90KB）`);
-  if (kb > 150) warn(`base.json 体积 ${kb}KB 超出预期，检查是否误存了释义`);
+  log(`base.json  ${fmt(baseWords.length)} 词  ${kb} KB（主包预算 ~120KB，含 frqRank 列）`);
+  if (kb > 180) warn(`base.json 体积 ${kb}KB 超出预期，检查是否误存了释义`);
 
   // ---------- pro-*.json（分包 A：TSL / NAWL / Spoken）----------
   const baseSet = new Set(base);
