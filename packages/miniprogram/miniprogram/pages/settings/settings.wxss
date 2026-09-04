@@ -1,0 +1,12 @@
+.settings { padding-top: 32rpx; }
+.sec { display: block; margin-bottom: 16rpx; }
+.group { overflow: hidden; }
+.item {
+  display: flex; align-items: center; gap: 16rpx;
+  padding: 32rpx 28rpx; border-bottom: 2rpx solid var(--border);
+}
+.item:last-child { border-bottom: none; }
+.item-label { flex: none; font-size: 28rpx; font-weight: 700; color: var(--text-1); }
+.item-note { flex: 1; font-size: 22rpx; color: var(--text-3); }
+.item-tick { margin-left: auto; font-size: 30rpx; font-weight: 800; color: var(--brand-text); }
+.foot-note { display: block; margin-top: 24rpx; font-size: 22rpx; color: var(--text-3); line-height: 1.7; }

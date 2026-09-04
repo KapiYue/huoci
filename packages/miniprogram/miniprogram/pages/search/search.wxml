@@ -1,6 +1,68 @@
-<view class="hc-page placeholder">
-  <view class="ph-card hc-card">
-    <text class="ph-title">查词</text>
-    <text class="ph-body">{{note}}</text>
+<!-- ④ 查词。`design.md` §5.4 S7 -->
+<view class="hc-page search {{themeClass}}">
+
+  <view class="bar">
+    <text class="bar-icon">🔍</text>
+    <input
+      class="bar-input"
+      value="{{input}}"
+      bindinput="onInput"
+      bindconfirm="onConfirm"
+      confirm-type="search"
+      placeholder="输入单词"
+      placeholder-class="ph"
+    />
+    <text class="bar-clear" wx:if="{{input}}" bindtap="clear">✕</text>
+  </view>
+
+  <!-- 空态。`[09-03]` 按原型补一排高频场景词，省得用户对着空框想不出查什么 -->
+  <view class="hint" wx:if="{{phase === 'idle'}}">
+    <text class="hint-title">查一个你刚撞见的词</text>
+    <text class="hint-sub">查到的词可以直接加进你的活词，明天就会出现在复习里。</text>
+    <text class="chips-title">试试这些高频场景词</text>
+    <view class="chips">
+      <text class="chip hc-mono" wx:for="{{samples}}" wx:key="*this" data-w="{{item}}" bindtap="useSample">{{item}}</text>
+    </view>
+  </view>
+
+  <view class="hint" wx:elif="{{phase === 'loading'}}">
+    <text class="hint-title">查询中…</text>
+  </view>
+
+  <!-- 无结果态 -->
+  <view class="hint" wx:elif="{{phase === 'miss'}}">
+    <text class="hint-title">没查到这个词</text>
+    <text class="hint-sub">确认一下拼写。词组和缩写暂时查不了。</text>
+  </view>
+
+  <!-- 网络失败态 -->
+  <view class="hint" wx:elif="{{phase === 'error'}}">
+    <text class="hint-title">{{error}}</text>
+    <text class="hint-sub" bindtap="onConfirm">点这里重试</text>
+  </view>
+
+  <!-- 结果 -->
+  <view class="card hc-card" wx:elif="{{result}}">
+    <view class="card-head">
+      <text class="term">{{result.term}}</text>
+      <text class="phonetic hc-mono" wx:if="{{result.phonetic}}">/{{result.phonetic}}/</text>
+      <text class="speak {{playing ? 'is-on' : ''}}" wx:if="{{result.audioUrl}}" bindtap="play">🔊</text>
+    </view>
+
+    <view class="part" wx:for="{{result.parts}}" wx:key="partOfSpeech">
+      <text class="pos">{{item.partOfSpeech}}</text>
+      <text class="pos-meaning">{{item.meaning}}</text>
+    </view>
+
+    <view class="example" wx:if="{{result.exampleEnglish}}">
+      <text class="example-en">例：{{result.exampleEnglish}}</text>
+      <text class="example-zh" wx:if="{{result.exampleChinese}}">{{result.exampleChinese}}</text>
+    </view>
+  </view>
+
+  <!-- 主操作放屏幕下半部分（§5.0 第 6 条：通勤单手可达） -->
+  <view class="foot" wx:if="{{phase === 'hit'}}">
+    <view class="added" wx:if="{{saved}}">✓ 已在你的活词里</view>
+    <button class="hc-primary-btn" wx:else bindtap="addWord" loading="{{saving}}">＋ 加入我的活词</button>
   </view>
 </view>

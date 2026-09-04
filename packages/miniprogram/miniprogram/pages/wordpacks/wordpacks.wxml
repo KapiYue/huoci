@@ -1,0 +1,84 @@
+<!-- 词包（tabbar 第 5 项，W1）。还原对象：`docs/prototype/src/components/WordPacksTab.tsx`。
+     硬约束：不做词包商城 · 不做付费词包 · 应试包只给词表（不做题库/模考）· 自建包不做公开广场 -->
+<scroll-view class="hc-page {{themeClass}}" scroll-y enable-back-to-top>
+
+  <view class="head">
+    <text class="head-title">词包</text>
+    <text class="head-count">我的 {{mine.length}} 个</text>
+  </view>
+
+  <!-- 正在学。一个包都没加时这一区**不留空框**，直接从「推荐给你」开始 -->
+  <block wx:if="{{mine.length > 0}}">
+    <view class="hc-section-title sec">正在学</view>
+    <view class="pack hc-card" wx:for="{{mine}}" wx:key="id" data-id="{{item.id}}" bindtap="openPack">
+      <view class="pack-row">
+        <text class="pack-title">{{item.title}}</text>
+        <text class="pack-total hc-mono">{{item.totalWords}} 词</text>
+      </view>
+      <!-- 进度条显示的是「已激活」，不是「已学」—— 全站统一用活词这个计量单位 -->
+      <view class="bar"><view class="bar-fill" style="width:{{item.percent}}%"></view></view>
+      <text class="pack-sub">已激活 {{item.activatedWords}} 活词 · {{item.percent}}%</text>
+    </view>
+  </block>
+
+  <view class="sec-head">
+    <text class="hc-section-title">推荐给你</text>
+    <text class="sec-note">按你首启勾的场景出</text>
+  </view>
+  <view class="rec hc-card" wx:for="{{recommended}}" wx:key="id">
+    <view class="rec-left" data-id="{{item.id}}" bindtap="openPack">
+      <text class="pack-title">{{item.title}}</text>
+      <text class="pack-sub">{{item.totalWords}} 词 · {{item.description}}</text>
+    </view>
+    <view class="add-btn" data-id="{{item.id}}" catchtap="addPack">添加</view>
+  </view>
+  <view class="empty hc-card" wx:if="{{recommended.length === 0}}">
+    <text class="empty-title">推荐的都加完了</text>
+    <text class="empty-sub">你自己撞见的词永远排在词包前面，不加也不影响每天的队列。</text>
+  </view>
+
+  <view class="sec-head">
+    <text class="hc-section-title">考试词包</text>
+    <text class="sec-note">只给词表，不做题库 / 模考</text>
+  </view>
+  <view class="rec hc-card" wx:for="{{exams}}" wx:key="id">
+    <view class="rec-left" data-id="{{item.id}}" bindtap="openPack">
+      <text class="pack-title">{{item.title}}</text>
+      <text class="pack-sub">{{item.totalWords}} 词 · {{item.description}}</text>
+    </view>
+    <view class="add-btn {{item.joined ? 'is-on' : ''}}" data-id="{{item.id}}" catchtap="addPack">
+      {{item.joined ? '已加入' : '添加'}}
+    </view>
+  </view>
+
+  <view class="sec-head">
+    <text class="hc-section-title">我建的词包</text>
+    <text class="sec-add" bindtap="openCreate">＋ 新建</text>
+  </view>
+  <view class="rec hc-card" wx:for="{{customs}}" wx:key="id">
+    <view class="rec-left" data-id="{{item.id}}" bindtap="openPack">
+      <text class="pack-title">{{item.title}}</text>
+      <text class="pack-sub">{{item.totalWords}} 词 · {{item.description}}</text>
+    </view>
+    <view class="add-btn" data-id="{{item.id}}" catchtap="sharePack">分享</view>
+  </view>
+  <view class="empty hc-card" wx:if="{{customs.length === 0}}">
+    <text class="empty-title">还没有自建词包</text>
+    <text class="empty-sub">把某个项目里反复出现的词攒成一个包，转发给同事。不做公开广场，只能点对点转发。</text>
+  </view>
+
+  <view class="tail"></view>
+</scroll-view>
+
+<!-- 新建词包 -->
+<view class="mask" wx:if="{{creating}}" bindtap="closeCreate" catchtouchmove="noop">
+  <view class="dialog" catchtap="noop">
+    <text class="dlg-title">新建生词包</text>
+    <input class="field" value="{{newTitle}}" bindinput="onTitle" maxlength="20"
+           placeholder="给词包起个名字，比如「支付网关」" placeholder-class="ph" />
+    <view class="dlg-actions">
+      <view class="btn-ghost" bindtap="closeCreate">取消</view>
+      <button class="btn-ok" bindtap="confirmCreate">建好了</button>
+    </view>
+  </view>
+</view>

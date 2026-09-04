@@ -6,11 +6,25 @@ export const SK = {
   /** 今日队列的读缓存（T1-c：通勤/地铁是核心场景，纯瘦客户端在这里不可用） */
   PLAN_CACHE: 'hc.cache.plan',
   CARDS_CACHE: 'hc.cache.cards',
+  /** 我的生词列表的读缓存，按筛选分 key（见 services/words.ts） */
+  WORDS_CACHE: 'hc.cache.words',
   /** 离线写队列 */
   REVIEW_QUEUE: 'hc.queue.review',
   /** 埋点攒批 */
   EVENT_BUFFER: 'hc.buffer.events',
   HC_PROFILE: 'hc.profile',
+  /** 会员与 AI Credits 的本地账（P7 后端到位前的唯一事实来源，见 services/membership.ts） */
+  MEMBERSHIP: 'hc.membership',
+  /** 词包订阅状态（P4 后端到位前本地存，见 services/wordpacks.ts） */
+  WORDPACKS: 'hc.wordpacks',
+  /** 界面偏好：学习卡片模式 / 不参与排行榜（见 services/prefs.ts） */
+  PREFS: 'hc.prefs',
+  /** 外观主题：跟随系统 / 浅色 / 深色（见 services/theme.ts） */
+  THEME: 'hc.theme',
+  /** 排行榜首次进入的一次性隐私告知（见 services/leaderboard.ts） */
+  LEADERBOARD_NOTICE: 'hc.leaderboard.notice',
+  /** 阅读器「上次读的那篇」。**正文只存本地**（见 services/reader.ts） */
+  READER_LAST: 'hc.reader.last',
 } as const;
 
 export function read<T>(key: string, fallback: T): T {

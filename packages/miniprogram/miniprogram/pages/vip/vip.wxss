@@ -1,0 +1,160 @@
+.hc-page { padding-top: 24rpx; padding-bottom: calc(env(safe-area-inset-bottom) + 200rpx); }
+
+/* —— M1 当前余额 —— */
+.balance {
+  padding: 32rpx; border-radius: var(--r-xl);
+  background: linear-gradient(100deg, rgba(251, 191, 36, 0.14), rgba(249, 115, 22, 0.08));
+  border-color: rgba(251, 191, 36, 0.5);
+}
+.balance.is-zero { background: var(--surface-sunk); border-color: var(--border); }
+.balance-label { font-size: 22rpx; font-weight: 700; color: var(--text-3); }
+.balance-row { display: flex; align-items: baseline; gap: 12rpx; margin-top: 8rpx; }
+.balance-num { font-size: 64rpx; font-weight: 800; line-height: 1.1; color: var(--warn-600); }
+.balance-unit { font-size: 24rpx; font-weight: 700; color: var(--text-2); }
+.balance-note { display: block; margin-top: 8rpx; font-size: 22rpx; color: var(--text-3); line-height: 1.6; }
+.vip-tag {
+  display: inline-block; margin-top: 16rpx; padding: 6rpx 18rpx; border-radius: var(--r-full);
+  background: linear-gradient(90deg, #fbbf24, #eab308); color: #0f172a;
+  font-size: 20rpx; font-weight: 800;
+}
+
+.sec { display: block; margin: 40rpx 4rpx 16rpx; }
+
+/* —— M2 充值档 —— */
+.plans { display: flex; flex-direction: column; gap: 16rpx; }
+.plan {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 28rpx; border-radius: var(--r-md);
+}
+.plan.is-on { border-color: var(--brand-600); background: var(--st-captured-bg); }
+.plan-left { display: flex; align-items: center; gap: 20rpx; }
+.radio {
+  width: 32rpx; height: 32rpx; flex: none; border-radius: var(--r-full);
+  border: 3rpx solid var(--text-4); background: transparent;
+}
+.radio.is-on { border-color: var(--brand-600); background: var(--brand-600); box-shadow: inset 0 0 0 6rpx var(--surface); }
+.plan-name-row { display: flex; align-items: center; gap: 12rpx; }
+.plan-name { font-size: 30rpx; font-weight: 800; color: var(--text-1); }
+.plan-bonus {
+  padding: 2rpx 12rpx; border-radius: var(--r-sm); font-size: 19rpx; font-weight: 800;
+  color: var(--warn-600); background: rgba(245, 158, 11, 0.16);
+}
+.plan-price { font-size: 32rpx; font-weight: 800; color: var(--text-1); }
+
+/* —— 消耗口径 —— */
+.usage {
+  margin-top: 24rpx; padding: 24rpx; border-radius: var(--r-md);
+  background: var(--surface-sunk); border: 2rpx solid var(--border);
+}
+.usage-title { display: block; font-size: 24rpx; font-weight: 800; color: var(--text-2); }
+.usage-body { display: block; margin-top: 8rpx; font-size: 21rpx; color: var(--text-3); line-height: 1.7; }
+
+/* —— 激励视频（唯一的广告形态） —— */
+.ad {
+  display: flex; align-items: center; justify-content: space-between; gap: 20rpx;
+  margin-top: 24rpx; padding: 24rpx; border-radius: var(--r-md);
+  background: var(--st-captured-bg); border: 2rpx solid var(--st-captured-bd);
+}
+.ad-left { flex: 1; min-width: 0; }
+.ad-title { display: block; font-size: 24rpx; font-weight: 800; color: var(--brand-text); }
+.ad-sub { display: block; margin-top: 6rpx; font-size: 19rpx; color: var(--text-3); }
+.ad-btn {
+  flex: none; height: 60rpx; padding: 0 26rpx; border-radius: var(--r-full);
+  background: var(--brand-600); color: #fff; font-size: 22rpx; font-weight: 800;
+  display: flex; align-items: center;
+}
+.ad-btn.is-off { opacity: 0.4; }
+
+/* —— 一直免费 —— */
+.free { margin-top: 24rpx; padding: 28rpx; border-radius: var(--r-lg); }
+.free-title { display: block; font-size: 24rpx; font-weight: 800; color: var(--ok-600); }
+.free-list { display: block; margin-top: 12rpx; font-size: 24rpx; font-weight: 700; color: var(--text-2); line-height: 1.7; }
+.free-note { display: block; margin-top: 10rpx; font-size: 20rpx; color: var(--text-4); line-height: 1.7; }
+
+.tail { height: 40rpx; }
+
+/* —— 底部支付条 —— */
+.paybar {
+  position: fixed; left: 0; right: 0; bottom: 0; padding: 20rpx 32rpx;
+  padding-bottom: calc(env(safe-area-inset-bottom) + 20rpx);
+  background: var(--surface); border-top: 2rpx solid var(--border);
+}
+
+/* —— M3 / M4 弹层 —— */
+.mask {
+  position: fixed; inset: 0; z-index: 50; background: rgba(2, 6, 23, 0.6);
+  display: flex; align-items: center; justify-content: center; padding: 48rpx;
+}
+.dialog {
+  width: 100%; padding: 40rpx 32rpx; border-radius: var(--r-lg);
+  background: var(--surface); border: 2rpx solid var(--border);
+}
+.dlg-title { display: block; text-align: center; font-size: 30rpx; font-weight: 800; color: var(--text-1); }
+.dlg-sub { display: block; margin-top: 12rpx; text-align: center; font-size: 22rpx; color: var(--text-3); line-height: 1.7; }
+
+.demo-tip {
+  margin-top: 20rpx; padding: 16rpx 20rpx; border-radius: var(--r-sm);
+  font-size: 20rpx; line-height: 1.7; color: var(--warn-600);
+  background: rgba(245, 158, 11, 0.12); border: 2rpx solid rgba(245, 158, 11, 0.3);
+}
+
+.order { margin-top: 24rpx; padding: 28rpx; border-radius: var(--r-md); background: var(--surface-sunk); }
+.order-label { font-size: 20rpx; color: var(--text-3); }
+.order-name { display: block; margin-top: 6rpx; font-size: 32rpx; font-weight: 800; color: var(--brand-text); }
+.order-price { display: block; margin-top: 12rpx; font-size: 26rpx; font-weight: 800; color: var(--text-1); }
+.order-kind { display: block; margin-top: 8rpx; font-size: 20rpx; color: var(--text-3); }
+
+.dlg-actions { display: flex; gap: 20rpx; margin-top: 28rpx; }
+.btn-ghost {
+  flex: 1; height: 84rpx; display: flex; align-items: center; justify-content: center;
+  border-radius: var(--r-md); border: 2rpx solid var(--border-strong);
+  font-size: 26rpx; font-weight: 700; color: var(--text-2);
+}
+.btn-ok {
+  flex: 1; height: 84rpx; display: flex; align-items: center; justify-content: center;
+  border-radius: var(--r-md); background: var(--ok-600); color: #fff;
+  font-size: 26rpx; font-weight: 800;
+}
+.btn-ok.wide { width: 100%; margin-top: 28rpx; background: var(--brand-600); }
+
+.paying, .result { text-align: center; }
+.spinner {
+  width: 64rpx; height: 64rpx; margin: 12rpx auto 24rpx; border-radius: var(--r-full);
+  border: 6rpx solid var(--border-strong); border-top-color: var(--brand-600);
+  animation: spin 0.9s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.result-icon {
+  width: 96rpx; height: 96rpx; margin: 0 auto 20rpx; border-radius: var(--r-full);
+  display: flex; align-items: center; justify-content: center; font-size: 44rpx; font-weight: 800;
+}
+.result-icon.is-ok { background: var(--st-activated-bg); color: var(--ok-600); }
+.result-icon.is-bad { background: rgba(244, 63, 94, 0.15); color: var(--danger-500); }
+
+/* —— `[09-03]` 不卖模式：额度从哪来 —— */
+.src {
+  display: flex; align-items: center; gap: 20rpx;
+  padding: 26rpx; margin-bottom: 16rpx; border-radius: var(--r-md);
+}
+.src.is-muted { opacity: 0.6; }
+.src-icon {
+  width: 68rpx; height: 68rpx; flex: none; border-radius: var(--r-md);
+  background: var(--surface-sunk); font-size: 30rpx;
+  display: flex; align-items: center; justify-content: center;
+}
+.src-text { flex: 1; min-width: 0; }
+.src-title { display: block; font-size: 25rpx; font-weight: 800; color: var(--text-1); }
+.src-sub { display: block; margin-top: 6rpx; font-size: 20rpx; color: var(--text-3); line-height: 1.7; }
+.src-btn {
+  flex: none; height: 64rpx; padding: 0 26rpx; border-radius: var(--r-full);
+  background: var(--brand-600); color: #fff; font-size: 22rpx; font-weight: 800;
+  display: flex; align-items: center;
+}
+.src-btn.is-off { opacity: 0.4; }
+
+.notice {
+  margin-top: 20rpx; padding: 20rpx 24rpx; border-radius: var(--r-sm);
+  background: var(--surface-sunk); border: 2rpx solid var(--border);
+}
+.notice-text { font-size: 20rpx; color: var(--text-3); line-height: 1.8; }

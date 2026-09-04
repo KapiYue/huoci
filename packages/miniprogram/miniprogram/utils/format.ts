@@ -1,4 +1,4 @@
-/** 「2 小时前」这类相对时间。§6.3 要求来源比释义更需要被看见，时间是来源的一半。 */
+/** 「2 小时前」这类相对时间。§5.4 S6 要求来源比释义更需要被看见，时间是来源的一半。 */
 export function relativeTime(iso: string | null | undefined): string {
   if (!iso) return '';
   const t = Date.parse(iso);

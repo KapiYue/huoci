@@ -1,21 +1,12 @@
-<!-- ① 今日 · App 的主屏。《执行方案》§6.1 -->
-<scroll-view class="hc-page" scroll-y enable-back-to-top refresher-enabled="{{true}}"
+<!-- ① 今日 · App 的主屏。
+     还原对象：`docs/prototype/src/components/TodayTab.tsx`（09-03 裁决：**原型为准**，
+     与 design.md §5 冲突时以原型为准 —— 用户条 / AI 额度入口 / 今日小目标
+     这三块是 09-03 按原型加回来的，不是遗漏，别再当超范围删掉。
+     ⚠️ 原型这里还有「VIP 角标」和「会员中心」，**09-03 裁决不卖 Credits 之后一并去掉了**
+     —— 没有会员这个东西了，留个角标只会让用户找一个不存在的付费页）。
+     仍然不加：App 下载引导 · banner/插屏广告（那两条是微信审核红线，不是审美） -->
+<scroll-view class="hc-page {{themeClass}}" scroll-y enable-back-to-top refresher-enabled="{{true}}"
              refresher-triggered="{{refreshing}}" bindrefresherrefresh="onPullRefresh">
-
-  <!-- 用户条 -->
-  <view class="userbar">
-    <view class="userbar-left" bindtap="openVip">
-      <image class="avatar" src="{{avatarUrl || defaultAvatar}}" mode="aspectFill" />
-      <view>
-        <view class="name-row">
-          <text class="name">{{displayName}}</text>
-          <view class="vip-chip {{isVip ? '' : 'is-off'}}">VIP</view>
-        </view>
-        <text class="greeting">今天又是让单词活起来的一天 ✨</text>
-      </view>
-    </view>
-    <view class="vip-entry" bindtap="openVip">会员中心 💎</view>
-  </view>
 
   <!-- 离线 / 待补发提示。通勤断网是常态，不能一片空白也不能假装成功 -->
   <view class="offline" wx:if="{{stale || pending > 0}}">
@@ -23,84 +14,111 @@
     <text wx:else>当前离线，展示的是上次的数据</text>
   </view>
 
+  <!-- 用户条：头像 · 昵称 · VIP 角标 · 会员中心（原型 TodayTab 顶部） -->
+  <view class="userbar">
+    <view class="userbar-left" bindtap="openProfile">
+      <view class="avatar">
+        <image class="avatar-img" wx:if="{{avatarUrl}}" src="{{avatarUrl}}" mode="aspectFill" />
+        <text class="avatar-mark" wx:else>活</text>
+      </view>
+      <view class="userbar-text">
+        <view class="userbar-name-row">
+          <text class="userbar-name">{{displayName}}</text>
+        </view>
+        <text class="userbar-sub">{{greeting}}</text>
+      </view>
+    </view>
+    <!-- `[09-03]` 原型这里是「会员中心 💎」。**不卖 Credits 之后没有「会员」这个东西了**，
+         入口改成额度本身：点进去是「额度从哪来」，不是充值页 -->
+    <view class="member-entry" bindtap="openVip">AI 额度 {{credits}}</view>
+  </view>
+
   <mascot message="{{mascotMessage}}" />
 
   <!-- 今日记忆队列 -->
   <view class="hero hc-card">
     <view class="hero-head">
-      <view class="hero-tag"><view class="dot"></view><text>今日记忆队列</text></view>
-      <text class="hero-cap hc-mono">上限 {{cap}} 词 / 轮</text>
+      <view class="hero-tag">
+        <view class="hero-dot"></view>
+        <text class="hero-tag-text">今日记忆队列</text>
+      </view>
+      <text class="hero-cap hc-mono">上限 {{summary.daily_goal}} 词 / 轮</text>
     </view>
 
-    <view class="hero-nums">
+    <view class="hero-line">
       <text class="num num-due hc-mono">{{summary.due_count}}</text>
       <text class="num-label">个词需要复习</text>
       <text class="num-sep">·</text>
       <text class="num num-new hc-mono">{{summary.new_count}}</text>
       <text class="num-label">个新词待学习</text>
     </view>
-    <text class="hero-sub">遵循 SM-2 记忆曲线，先复习到期词，再补充高频场景新词</text>
+    <text class="hero-note">遵循 SM-2 记忆曲线，先复习到期词，再补充高频场景新词</text>
 
-    <button class="hc-primary-btn hero-btn {{total === 0 ? 'is-done' : ''}}" bindtap="startStudy">
-      {{total === 0 ? '今天的队列已清空 🎉' : '开始今日学习（' + total + ' 词）'}}
+    <button class="hc-primary-btn hero-btn" wx:if="{{total > 0}}" bindtap="startStudy">
+      ▶ 开始今日学习（{{total}} 词）
     </button>
+    <view class="hero-done" wx:else>今天的队列已经清空了</view>
   </view>
 
-  <!-- 连续学习 / 已激活 -->
-  <view class="stat-row">
-    <view class="stat hc-card">
-      <view class="stat-head">
-        <text class="stat-title">连续学习</text>
-        <view class="stat-icon si-amber">🔥</view>
+  <!-- 连续学习 / 已激活活词（原型的两张并排卡） -->
+  <view class="facts">
+    <view class="fact hc-card">
+      <view class="fact-head">
+        <text class="fact-label">连续学习</text>
+        <text class="fact-icon fact-icon-flame">🔥</text>
       </view>
-      <view class="stat-value">
-        <text class="stat-num hc-mono c-amber">{{summary.streak_days}}</text><text class="stat-unit">天</text>
+      <view class="fact-num-row">
+        <text class="fact-num fact-num-streak hc-mono">{{summary.streak_days}}</text>
+        <text class="fact-unit">天</text>
       </view>
-      <view class="week">
-        <view class="wd {{index < summary.streak_days ? 'is-on' : ''}}"
-              wx:for="{{weekDays}}" wx:key="*this">{{item}}</view>
+      <!-- 一周七格。**只陈述事实，不做奖励**：不放彩带、断了不弹「别灰心」 -->
+      <view class="weekdots">
+        <text class="weekdot {{item.on ? 'is-on' : ''}}" wx:for="{{weekDots}}" wx:key="label">{{item.label}}</text>
       </view>
     </view>
 
-    <view class="stat hc-card" bindtap="openWords">
-      <view class="stat-head">
-        <text class="stat-title">已经激活活词</text>
-        <view class="stat-icon si-green">✨</view>
+    <view class="fact hc-card" bindtap="openWords">
+      <view class="fact-head">
+        <text class="fact-label">已经激活活词</text>
+        <text class="fact-icon fact-icon-spark">✨</text>
       </view>
-      <view class="stat-value">
-        <text class="stat-num hc-mono c-green">{{summary.activated_count}}</text><text class="stat-unit">个</text>
+      <view class="fact-num-row">
+        <text class="fact-num fact-num-act hc-mono">{{summary.activated_count}}</text>
+        <text class="fact-unit">个</text>
       </view>
-      <view class="stat-foot">
-        <text class="stat-hint">稳固期 ≥ 21 天</text>
-        <text class="stat-arrow">→</text>
+      <view class="fact-foot">
+        <text class="fact-foot-text">稳固期 ≥ 21 天</text>
+        <text class="fact-foot-arrow">→</text>
       </view>
     </view>
   </view>
 
-  <!-- 今日小目标 -->
+  <!-- 今日小目标 · 场景触达（原型 TodayTab 的 Mini Tasks） -->
   <view class="section-head">
     <text class="hc-section-title">今日小目标 · 场景触达</text>
+    <text class="section-more">{{miniTaskLeft}} 项待完成</text>
   </view>
-  <view class="task-row">
-    <view class="task hc-card" bindtap="openReader">
+  <view class="tasks">
+    <view class="task hc-card task-reader" bindtap="openReader">
       <view class="task-head">
-        <view class="task-icon ti-purple">📖</view>
-        <text class="task-chip tc-purple">P3 阅读器</text>
+        <text class="task-icon">📖</text>
+        <text class="task-tag task-tag-reader">P3 阅读器</text>
       </view>
       <text class="task-title">贴文章 · 点词收录</text>
       <text class="task-sub">自动绑定原句与出处</text>
     </view>
-    <view class="task hc-card" bindtap="openSearch">
+
+    <view class="task hc-card task-search" bindtap="openSearch">
       <view class="task-head">
-        <view class="task-icon ti-indigo">🔍</view>
-        <text class="task-chip tc-indigo">查词抓取</text>
+        <text class="task-icon">🔍</text>
+        <text class="task-tag task-tag-search">查词抓取</text>
       </view>
       <text class="task-title">精准查词入库</text>
       <text class="task-sub">一键加入我的活词</text>
     </view>
   </view>
 
-  <!-- 最近遇到的词 -->
+  <!-- 最近遇到的词。数据源是 S6 的 `recent` 筛选（见 today.ts），不是今日队列 -->
   <view class="section-head">
     <text class="hc-section-title">最近遇到的词</text>
     <text class="section-more" bindtap="openWords">查看全部（{{summary.total_words}}）→</text>
@@ -108,7 +126,7 @@
 
   <view class="empty hc-card" wx:if="{{recent.length === 0}}">
     <text class="empty-title">还没有词</text>
-    <text class="empty-sub">去「查词」搜一个，或用阅读器贴一篇你自己的文章点词收录</text>
+    <text class="empty-sub">去「查词」搜一个，或者贴一篇你自己在读的文章点词收录。</text>
   </view>
 
   <view class="word hc-card" wx:for="{{recent}}" wx:key="wordId" bindtap="openWords">

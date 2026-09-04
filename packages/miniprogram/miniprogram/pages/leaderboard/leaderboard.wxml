@@ -1,0 +1,153 @@
+<!-- 排行榜与好友 PK（L1–L4）。还原对象：`docs/prototype/src/components/LeaderboardModal.tsx`。
+     度量单位是**本周新激活的活词数**，不是打卡天数 / 做题量 / 学习时长。
+     不显示：段位 · 头衔 · 连胜火苗 · 学习时长 —— 排名是事实，头衔是身份。 -->
+<view class="hc-page {{themeClass}}">
+
+  <!-- 关掉排行榜的人：自己不上榜，也不看别人的榜 -->
+  <view class="hidden-box hc-card" wx:if="{{hidden}}">
+    <text class="hidden-title">你关掉了排行榜</text>
+    <text class="hidden-sub">在「我的 → 不参与排行榜」里可以打开。关着的时候你不上榜，也不看别人的榜。</text>
+  </view>
+
+  <block wx:else>
+
+    <!-- L1 · 榜单 -->
+    <block wx:if="{{view === 'list'}}">
+      <view class="seg">
+        <view class="seg-btn {{period === 'thisWeek' ? 'is-on' : ''}}" data-v="thisWeek" bindtap="switchPeriod">本周</view>
+        <view class="seg-btn {{period === 'lastWeek' ? 'is-on' : ''}}" data-v="lastWeek" bindtap="switchPeriod">上周</view>
+      </view>
+
+      <scroll-view class="list" scroll-y>
+        <view class="row hc-card {{item.isMe ? 'is-me' : ''}}" wx:for="{{rows}}" wx:key="id">
+          <text class="row-rank hc-mono">{{item.rank}}</text>
+          <view class="row-avatar">{{item.initial}}</view>
+          <view class="row-text">
+            <text class="row-name">{{item.displayName}}</text>
+            <text class="row-num">本周激活 {{item.activatedThisWeek}}</text>
+          </view>
+          <view class="pk-btn" wx:if="{{!item.isMe}}" data-id="{{item.id}}" data-name="{{item.displayName}}" bindtap="invite">PK</view>
+        </view>
+
+        <view class="empty hc-card" wx:if="{{rows.length <= 1}}">
+          <text class="empty-title">榜上还只有你</text>
+          <text class="empty-sub">把小程序转发给一个同事，你们下周就能比一比谁激活的活词多。</text>
+          <button class="ghost-btn" open-type="share">邀请微信好友一起</button>
+        </view>
+        <view class="tail"></view>
+      </scroll-view>
+
+      <!-- 我的名次固定在底部，即使已经在榜内 -->
+      <view class="mine">
+        <text class="row-rank hc-mono">{{mine.rank}}</text>
+        <view class="row-avatar is-me">{{mine.initial}}</view>
+        <view class="row-text">
+          <text class="row-name">你</text>
+          <text class="row-num">本周激活 {{mine.activatedThisWeek}}</text>
+        </view>
+        <view class="ghost-btn small" bindtap="openPoster">成果海报</view>
+      </view>
+    </block>
+
+    <!-- L2 · 发起 PK -->
+    <block wx:elif="{{view === 'invite'}}">
+      <view class="card hc-card">
+        <text class="card-title">和 {{opponent.displayName}} 比一局</text>
+        <view class="vs">
+          <view class="vs-side">
+            <view class="row-avatar big is-me">{{mine.initial}}</view>
+            <text class="vs-name">你</text>
+          </view>
+          <text class="vs-mark">VS</text>
+          <view class="vs-side">
+            <view class="row-avatar big">{{opponent.initial}}</view>
+            <text class="vs-name">{{opponent.displayName}}</text>
+          </view>
+        </view>
+        <text class="card-sub">10 题看词选释义，每题 10 秒。题目优先出你们都学过的词。</text>
+        <!-- 分享必须用户主动点，**不自动弹转发、不做「分享后解锁」** -->
+        <button class="hc-primary-btn" open-type="share">转发战书给他</button>
+        <view class="ghost-btn" bindtap="startBattle">先自己打一局</view>
+        <text class="card-note">等待对方应战 · 24 小时后失效</text>
+      </view>
+      <view class="back" bindtap="backToList">← 回排行榜</view>
+    </block>
+
+    <!-- L3 · 对战 -->
+    <block wx:elif="{{view === 'battle'}}">
+      <view class="scorebar">
+        <text class="score">你 {{myScore}}</text>
+        <text class="qidx">第 {{qIndex + 1}} / {{total}} 题</text>
+        <text class="score">{{opponent.displayName}} {{oppScore}}</text>
+      </view>
+      <view class="timer {{seconds <= 3 ? 'is-hot' : ''}}">⏱ {{seconds}}</view>
+
+      <view class="qcard hc-card">
+        <text class="qterm">{{question.term}}</text>
+      </view>
+
+      <view class="opts">
+        <view class="opt hc-card {{item.cls}}" wx:for="{{options}}" wx:key="idx"
+              data-i="{{item.idx}}" bindtap="answer">{{item.text}}</view>
+      </view>
+    </block>
+
+    <!-- L4 · 结果 -->
+    <block wx:else>
+      <view class="card hc-card">
+        <text class="result-title">{{resultTitle}}</text>
+        <view class="result-lines">
+          <text class="result-line">你 {{myScore}}/{{total}} · {{mySeconds}}s</text>
+          <text class="result-line">{{opponent.displayName}} {{oppScore}}/{{total}} · {{oppSeconds}}s</text>
+        </view>
+      </view>
+
+      <view class="review-head" bindtap="toggleReview">
+        <text class="hc-section-title">逐题对照</text>
+        <text class="review-toggle">{{showReview ? '收起' : '展开'}}</text>
+      </view>
+      <block wx:if="{{showReview}}">
+        <view class="review hc-card" wx:for="{{review}}" wx:key="term">
+          <text class="review-term">{{item.term}}</text>
+          <text class="review-line {{item.ok ? 'is-ok' : 'is-bad'}}">
+            {{item.ok ? '✓ ' : '✗ '}}{{item.correct}}
+          </text>
+          <text class="review-mine" wx:if="{{!item.ok}}">你选的：{{item.picked}}</text>
+        </view>
+      </block>
+
+      <view class="result-actions">
+        <view class="ghost-btn" bindtap="startBattle">再来一局</view>
+        <view class="ghost-btn" bindtap="openPoster">生成成果海报</view>
+        <view class="ghost-btn" bindtap="backToList">回排行榜</view>
+      </view>
+    </block>
+
+  </block>
+
+  <!-- 首次进入的一次性告知。隐私要求，不是可选交互 -->
+  <view class="mask" wx:if="{{notice}}" catchtouchmove="noop">
+    <view class="dialog" catchtap="noop">
+      <text class="dlg-title">上榜会展示什么</text>
+      <text class="dlg-sub">榜单会把你的昵称和头像首字展示给所有用过这个小程序的人，以及你本周新激活的活词数。不展示你的具体词、学习时长和任何联系方式。</text>
+      <text class="dlg-sub">不想上榜的话，「我的 → 不参与排行榜」随时可以关，关掉后你不上榜，也不看别人的榜。</text>
+      <view class="dlg-actions">
+        <view class="btn-ghost" bindtap="declineBoard">先不参与</view>
+        <button class="btn-ok" bindtap="acceptBoard">知道了</button>
+      </view>
+    </view>
+  </view>
+
+  <!-- 成果海报。canvas 生成，用户自己保存 / 转发，不自动弹 -->
+  <view class="mask" wx:if="{{poster}}" bindtap="closePoster" catchtouchmove="noop">
+    <view class="dialog" catchtap="noop">
+      <text class="dlg-title">成果海报</text>
+      <canvas class="poster-canvas" type="2d" id="poster"></canvas>
+      <view class="dlg-actions">
+        <view class="btn-ghost" bindtap="closePoster">关闭</view>
+        <button class="btn-ok" bindtap="savePoster">保存到相册</button>
+      </view>
+    </view>
+  </view>
+
+</view>

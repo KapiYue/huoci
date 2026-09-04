@@ -1,4 +1,4 @@
-// 离线写队列。《执行方案》§14.1 T1-c：核心场景是通勤/地铁，纯 server-authoritative
+// 离线写队列。`design.md` §12.1 T1-c：核心场景是通勤/地铁，纯 server-authoritative
 // 瘦客户端在那里直接不可用。提交 review 一律：**先入队 → UI 立即响应 → 后台补发**。
 //
 // §14.4 第 4 条：每条必带 client_event_id。词鲸侧 apply_review 收到重复键直接返回
@@ -45,15 +45,28 @@ export function enqueue(item: Omit<QueuedReview, 'queuedAt' | 'attempts'>): void
   save(q);
 }
 
-async function send(item: QueuedReview): Promise<CijingWord> {
-  const res = await gw.rpc<CijingWord | CijingWord[]>('apply_review', {
+/** hc_apply_review 的返回（`0004`）。裸 words 行**不是**它的返回形状。 */
+interface ApplyReviewResult {
+  word: CijingWord;
+  activated_at: string | null;
+  /** 本次是否首次跨过激活线。首页的「新激活 +N」与北极星都吃这个字段 */
+  newly_activated: boolean;
+}
+
+/**
+ * ⚠️ 调的是 `hc_apply_review` **包装**，不是词鲸的 `apply_review`（`design.md` §11「连带结论」）。
+ * 理由：`activated_at`「一次写入永不改写」是跨三端的不变量，交给客户端判断迟早有一端漏判。
+ * 包一层之后，事实（`words` / `review_events`）与解释（`hc_word_status`）在同一个事务里落地。
+ */
+async function send(item: QueuedReview): Promise<ApplyReviewResult> {
+  const res = await gw.rpc<ApplyReviewResult | ApplyReviewResult[]>('hc_apply_review', {
     p_word_id: item.wordId,
     p_quality: item.quality,
     p_exercise_type: item.exerciseType,
     p_response_time_ms: item.responseTimeMs,
     p_client_event_id: item.clientEventId,
   });
-  return Array.isArray(res) ? (res[0] as CijingWord) : res;
+  return Array.isArray(res) ? (res[0] as ApplyReviewResult) : res;
 }
 
 let flushing = false;
@@ -64,6 +77,8 @@ export interface FlushResult {
   /** 因为断网停下的（不是失败，是等下次） */
   offline: boolean;
   words: CijingWord[];
+  /** 补发过程中服务端首次盖章的词。§15 的 word_activated 以**这个**为准，不是本地乐观值 */
+  activated: string[];
 }
 
 /**
@@ -72,9 +87,12 @@ export interface FlushResult {
  * 否则一条脏数据会把整个队列永久堵死。
  */
 export async function flush(): Promise<FlushResult> {
-  if (flushing) return { sent: 0, remaining: pendingCount(), offline: false, words: [] };
+  if (flushing) {
+    return { sent: 0, remaining: pendingCount(), offline: false, words: [], activated: [] };
+  }
   flushing = true;
   const words: CijingWord[] = [];
+  const activated: string[] = [];
   let sent = 0;
   let offline = false;
 
@@ -83,7 +101,9 @@ export async function flush(): Promise<FlushResult> {
     while (q.length > 0) {
       const head = q[0] as QueuedReview;
       try {
-        words.push(await send(head));
+        const res = await send(head);
+        words.push(res.word);
+        if (res.newly_activated) activated.push(head.wordId);
         sent++;
         q = peek().slice(1);
         save(q);
@@ -116,7 +136,7 @@ export async function flush(): Promise<FlushResult> {
     flushing = false;
   }
 
-  return { sent, remaining: pendingCount(), offline, words };
+  return { sent, remaining: pendingCount(), offline, words, activated };
 }
 
 export const SELF_RATING = EXERCISE_TYPE_SELF_RATING;

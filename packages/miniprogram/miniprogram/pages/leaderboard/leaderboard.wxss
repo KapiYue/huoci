@@ -1,0 +1,124 @@
+.hc-page { display: flex; flex-direction: column; height: 100vh; padding-top: 24rpx; padding-bottom: 0; }
+
+.hidden-box { padding: 48rpx 32rpx; border-radius: var(--r-lg); text-align: center; }
+.hidden-title { display: block; font-size: 30rpx; font-weight: 800; color: var(--text-1); }
+.hidden-sub { display: block; margin-top: 14rpx; font-size: 22rpx; color: var(--text-3); line-height: 1.8; }
+
+/* —— 周切换 —— */
+.seg {
+  align-self: flex-end; display: flex; padding: 4rpx; margin-bottom: 20rpx;
+  border-radius: var(--r-full); background: var(--surface-sunk); border: 2rpx solid var(--border);
+}
+.seg-btn { padding: 10rpx 26rpx; border-radius: var(--r-full); font-size: 22rpx; font-weight: 700; color: var(--text-3); }
+.seg-btn.is-on { background: var(--brand-600); color: #fff; }
+
+/* —— 榜单 —— */
+.list { flex: 1; min-height: 0; }
+.row {
+  display: flex; align-items: center; gap: 20rpx;
+  padding: 22rpx 26rpx; margin-bottom: 14rpx; border-radius: var(--r-md);
+}
+.row.is-me { border-color: var(--brand-600); background: var(--st-captured-bg); }
+.row-rank { width: 48rpx; flex: none; text-align: center; font-size: 26rpx; font-weight: 800; color: var(--text-3); }
+.row-avatar {
+  width: 68rpx; height: 68rpx; flex: none; border-radius: var(--r-full);
+  background: linear-gradient(135deg, var(--brand-500), var(--indigo-500));
+  color: #fff; font-size: 26rpx; font-weight: 800;
+  display: flex; align-items: center; justify-content: center;
+}
+.row-avatar.is-me { background: linear-gradient(135deg, var(--ok-500), var(--cyan-500)); }
+.row-avatar.big { width: 100rpx; height: 100rpx; font-size: 34rpx; }
+.row-text { flex: 1; min-width: 0; }
+.row-name { display: block; font-size: 26rpx; font-weight: 800; color: var(--text-1); }
+.row-num { display: block; margin-top: 2rpx; font-size: 20rpx; color: var(--text-3); }
+.pk-btn {
+  flex: none; padding: 10rpx 24rpx; border-radius: var(--r-full);
+  background: var(--brand-600); color: #fff; font-size: 22rpx; font-weight: 800;
+}
+
+/* —— 我的固定条 —— */
+.mine {
+  display: flex; align-items: center; gap: 20rpx;
+  padding: 22rpx 26rpx;
+  padding-bottom: calc(env(safe-area-inset-bottom) + 22rpx);
+  border-top: 2rpx solid var(--border); background: var(--surface);
+  margin: 0 -32rpx;
+}
+
+/* —— L2 / L4 卡片 —— */
+.card { padding: 36rpx 32rpx; border-radius: var(--r-xl); }
+.card-title { display: block; font-size: 32rpx; font-weight: 800; color: var(--text-1); text-align: center; }
+.card-sub { display: block; margin: 24rpx 0; font-size: 22rpx; color: var(--text-3); text-align: center; line-height: 1.7; }
+.card-note { display: block; margin-top: 20rpx; font-size: 20rpx; color: var(--text-4); text-align: center; }
+.vs { display: flex; align-items: center; justify-content: center; gap: 40rpx; margin: 32rpx 0; }
+.vs-side { text-align: center; }
+.vs-name { display: block; margin-top: 10rpx; font-size: 22rpx; font-weight: 700; color: var(--text-2); }
+.vs-mark { font-size: 28rpx; font-weight: 800; color: var(--text-4); }
+
+.ghost-btn {
+  margin-top: 20rpx; height: 88rpx; display: flex; align-items: center; justify-content: center;
+  border-radius: var(--r-md); border: 2rpx solid var(--border-strong);
+  font-size: 26rpx; font-weight: 800; color: var(--brand-text);
+}
+.ghost-btn.small { flex: none; margin: 0; height: 60rpx; padding: 0 22rpx; font-size: 20rpx; }
+.back { margin-top: 28rpx; text-align: center; font-size: 24rpx; font-weight: 700; color: var(--text-3); }
+
+/* —— L3 对战 —— */
+.scorebar { display: flex; align-items: center; justify-content: space-between; padding: 8rpx 4rpx; }
+.score { font-size: 24rpx; font-weight: 800; color: var(--text-2); }
+.qidx { font-size: 22rpx; color: var(--text-3); }
+.timer {
+  margin: 20rpx auto; width: 140rpx; text-align: center; padding: 10rpx 0;
+  border-radius: var(--r-full); background: var(--surface-sunk);
+  font-size: 26rpx; font-weight: 800; color: var(--text-2);
+}
+.timer.is-hot { background: rgba(244, 63, 94, 0.15); color: var(--danger-500); }
+.qcard { padding: 60rpx 32rpx; border-radius: var(--r-xl); text-align: center; }
+.qterm { font-size: 56rpx; font-weight: 800; color: var(--text-1); }
+.opts { margin-top: 28rpx; display: flex; flex-direction: column; gap: 16rpx; }
+.opt { padding: 30rpx 28rpx; border-radius: var(--r-md); font-size: 26rpx; font-weight: 700; color: var(--text-1); }
+.opt.is-right { border-color: var(--ok-500); background: var(--st-activated-bg); color: var(--st-activated-fg); }
+.opt.is-wrong { border-color: var(--danger-500); background: rgba(244, 63, 94, 0.12); color: var(--danger-500); }
+
+/* —— L4 结果 —— */
+.result-title { display: block; text-align: center; font-size: 40rpx; font-weight: 800; color: var(--text-1); }
+.result-lines { margin-top: 24rpx; text-align: center; }
+.result-line { display: block; font-size: 24rpx; font-weight: 700; color: var(--text-2); line-height: 1.9; }
+.review-head { display: flex; align-items: center; justify-content: space-between; margin: 32rpx 4rpx 16rpx; }
+.review-toggle { font-size: 22rpx; font-weight: 800; color: var(--brand-text); }
+.review { padding: 22rpx 26rpx; margin-bottom: 14rpx; border-radius: var(--r-md); }
+.review-term { display: block; font-size: 26rpx; font-weight: 800; color: var(--text-1); }
+.review-line { display: block; margin-top: 6rpx; font-size: 22rpx; font-weight: 700; }
+.review-line.is-ok { color: var(--ok-600); }
+.review-line.is-bad { color: var(--danger-500); }
+.review-mine { display: block; margin-top: 4rpx; font-size: 20rpx; color: var(--text-4); }
+.result-actions { margin-top: 24rpx; }
+
+.empty { padding: 48rpx 32rpx; border-radius: var(--r-md); text-align: center; }
+.empty-title { display: block; font-size: 28rpx; font-weight: 800; color: var(--text-2); }
+.empty-sub { display: block; margin-top: 12rpx; font-size: 21rpx; color: var(--text-3); line-height: 1.7; }
+.tail { height: 40rpx; }
+
+/* —— 弹层 —— */
+.mask {
+  position: fixed; inset: 0; z-index: 50; background: rgba(2, 6, 23, 0.6);
+  display: flex; align-items: center; justify-content: center; padding: 48rpx;
+}
+.dialog {
+  width: 100%; padding: 36rpx 32rpx; border-radius: var(--r-lg);
+  background: var(--surface); border: 2rpx solid var(--border);
+}
+.dlg-title { display: block; font-size: 30rpx; font-weight: 800; color: var(--text-1); }
+.dlg-sub { display: block; margin-top: 16rpx; font-size: 22rpx; color: var(--text-3); line-height: 1.8; }
+.dlg-actions { display: flex; gap: 20rpx; margin-top: 28rpx; }
+.btn-ghost {
+  flex: 1; height: 84rpx; display: flex; align-items: center; justify-content: center;
+  border-radius: var(--r-md); border: 2rpx solid var(--border-strong);
+  font-size: 26rpx; font-weight: 700; color: var(--text-2);
+}
+.btn-ok {
+  flex: 1; height: 84rpx; display: flex; align-items: center; justify-content: center;
+  border-radius: var(--r-md); background: var(--brand-600); color: #fff;
+  font-size: 26rpx; font-weight: 800;
+}
+.poster-canvas { width: 100%; height: 420rpx; margin-top: 24rpx; border-radius: var(--r-md); }

@@ -11,7 +11,7 @@ npm run sync:shared -w @huoci/miniprogram   # 把 packages/shared 同步进来�
 1. 微信开发者工具 → 导入项目 → 目录选 `packages/miniprogram`
 2. 把 `project.config.json` 的 `appid` 换成真实 AppID
 3. 复制 `miniprogram/config/env.example.ts` → `miniprogram/config/env.ts`，填网关地址
-4. 详情 → 本地设置 → 勾上「**不校验合法域名**」（开发期必需，见《执行方案》§14.1 T4）
+4. 详情 → 本地设置 → 勾上「**不校验合法域名**」（开发期必需，见`design.md` §12.1 T4）
 
 ## 目录
 
@@ -25,7 +25,7 @@ miniprogram/
   styles/      ← 设计令牌（从原型的 Tailwind 抽出）
 ```
 
-## 硬约束（《执行方案》§14.4，违反会踩到已知的坑）
+## 硬约束（`design.md` §14，违反会踩到已知的坑）
 
 1. **禁止裸 REST 写 `words`**，一律走 RPC
 2. **不做硬删除**（`review_events.word_id ON DELETE CASCADE` 会连坐删掉复习史）

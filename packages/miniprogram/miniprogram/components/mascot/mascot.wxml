@@ -1,12 +1,26 @@
+<!-- 活词小助手。形状 1:1 对着 prototype/src/components/CuteMascot.tsx 的 SVG 摆，
+     1 个 SVG 单位 = 1.6rpx（viewBox 100 → 160rpx）。
+     用 view + border-radius 而不是 <image src="data:image/svg+xml...">：
+     小程序 image 对 SVG data-uri 的支持跨基础库/渲染器不一致，而这个形状全是椭圆和圆角矩形，
+     CSS 画得出来就没必要赌。 -->
 <view class="mascot">
-  <view class="face">
+  <view class="bot">
+    <view class="aura"></view>
+    <view class="ear ear-l"></view>
+    <view class="ear ear-r"></view>
+    <view class="head"></view>
+    <view class="visor"></view>
+    <!-- 弯月眼与腮红压在面罩上层，顺序即层级 -->
     <view class="eye eye-l"></view>
     <view class="eye eye-r"></view>
     <view class="cheek cheek-l"></view>
     <view class="cheek cheek-r"></view>
-    <view class="mouth"></view>
+    <view class="antenna"></view>
+    <view class="antenna-tip"></view>
+    <view class="body"></view>
   </view>
-  <view class="bubble">
+
+  <view class="bubble" wx:if="{{message}}">
     <text class="bubble-text">{{message}}</text>
   </view>
 </view>

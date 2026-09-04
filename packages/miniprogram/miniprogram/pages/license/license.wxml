@@ -1,0 +1,26 @@
+<view class="hc-page license {{themeClass}}">
+
+  <view class="block hc-card">
+    <text class="block-title">内置底座词表</text>
+    <text class="block-body">NGSL / BSL 系列词表，约 4,400 词。活词只使用其中的拼写与频段，不含释义。</text>
+    <view class="kv">
+      <text class="k">署名</text>
+      <text class="v">{{authors}}</text>
+    </view>
+    <view class="kv">
+      <text class="k">许可</text>
+      <text class="v">{{license}}</text>
+    </view>
+    <view class="kv" bindtap="copyUrl">
+      <text class="k">许可全文</text>
+      <text class="v v-link">{{licenseUrl}}（点击复制）</text>
+    </view>
+  </view>
+
+  <view class="block hc-card">
+    <text class="block-title">词频与释义数据</text>
+    <text class="block-body">频段划分依据 ECDICT 聚合数据中的 COCA 频次。查词结果由服务端词典接口返回，随结果附带各自的来源署名。</text>
+  </view>
+
+  <text class="foot-note">若你认为此处的署名有遗漏或错误，请通过「我的 → 关于活词」中的方式告知，我们会尽快更正。</text>
+</view>

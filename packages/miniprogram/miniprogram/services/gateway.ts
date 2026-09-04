@@ -1,6 +1,6 @@
 // 网关请求层。**所有**请求都经这里，业务代码不许直接调 wx.request。
 //
-// 《执行方案》§14.1 T8：nginx 唯一入口 + location 分流
+// `design.md` §12.1 T8：nginx 唯一入口 + location 分流
 //   /auth/v1  /rest/v1  → 无状态透传到词鲸 Supabase
 //   /wx/*                → 本机 Flask（AppSecret、openid 映射、msgSecCheck）
 //
@@ -74,7 +74,11 @@ async function refreshSession(): Promise<Session | null> {
           access_token: string;
           refresh_token: string;
           expires_in: number;
-          user: { id: string; email: string | null; user_metadata?: { display_name?: string } };
+          user: {
+            id: string;
+            email: string | null;
+            user_metadata?: { display_name?: string; avatar_url?: string };
+          };
         }>('/auth/v1/token?grant_type=refresh_token', {
           method: 'POST',
           body: { refresh_token: current.refreshToken },
@@ -87,6 +91,7 @@ async function refreshSession(): Promise<Session | null> {
           userId: res.user.id,
           email: res.user.email,
           displayName: res.user.user_metadata?.display_name || current.displayName,
+          avatarUrl: res.user.user_metadata?.avatar_url || current.avatarUrl,
           provider: current.provider,
         };
         setSession(next);

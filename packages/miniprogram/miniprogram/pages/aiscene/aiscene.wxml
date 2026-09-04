@@ -1,0 +1,136 @@
+<!-- AI 场景练习 A1–A3。还原对象：`docs/prototype/src/components/AiSceneModal.tsx`。
+     明码标价、不做暗扣；余额为 0 时主按钮跳售卖页，**不弹全屏付费墙**。 -->
+<view class="hc-page {{themeClass}}">
+
+  <view class="bar">
+    <text class="bar-title">{{stage === 'chat' ? scenario.title : 'AI 场景练习'}}</text>
+    <text class="bar-credits hc-mono" wx:if="{{stage !== 'chat'}}">额度 {{credits}} 次</text>
+    <text class="bar-credits" wx:else>用到 {{usedCount}}/{{targets.length}} 个词</text>
+  </view>
+
+  <!-- A1 · 生成 -->
+  <block wx:if="{{stage === 'setup'}}">
+    <scroll-view class="body" scroll-y>
+      <view class="demo-tip">AI 后端还没接通（P4）。现在是演示对话：回复是脚本给的，额度按真实口径扣减。</view>
+
+      <view class="hc-section-title sec">用哪些词？</view>
+      <view class="chips">
+        <view class="chip {{wordSource === 'review' ? 'is-on' : ''}}" data-v="review" bindtap="pickSource">
+          本周待复习 {{reviewCount}} 个
+        </view>
+        <view class="chip {{wordSource === 'custom' ? 'is-on' : ''}}" data-v="custom" bindtap="pickSource">
+          手动挑
+        </view>
+      </view>
+      <view class="picker" wx:if="{{wordSource === 'custom'}}">
+        <view class="chip small {{item.on ? 'is-on' : ''}}" wx:for="{{pool}}" wx:key="term"
+              data-t="{{item.term}}" bindtap="toggleWord">{{item.term}}</view>
+      </view>
+      <text class="hint">默认吃复习队列。从 183 个词里挑是把工作推给你，不是帮你。</text>
+
+      <view class="hc-section-title sec">什么场景？</view>
+      <view class="scenes">
+        <view class="scene hc-card {{item.id === scenarioId ? 'is-on' : ''}}" wx:for="{{scenarios}}" wx:key="id"
+              data-id="{{item.id}}" bindtap="pickScenario">
+          <text class="scene-title">{{item.title}}</text>
+          <text class="scene-desc">{{item.description}}</text>
+        </view>
+      </view>
+      <input class="field" wx:if="{{scenarioId === 'custom'}}" value="{{customText}}" bindinput="onCustom"
+             placeholder="写下你明天真要开的那个会" placeholder-class="ph" />
+
+      <view class="price">
+        <text class="price-line">单轮对话消耗 {{cost}} 次额度</text>
+        <text class="price-note">明码标价，无暗扣</text>
+      </view>
+      <view class="tail"></view>
+    </scroll-view>
+
+    <view class="footer">
+      <button class="hc-primary-btn" wx:if="{{credits >= cost}}" bindtap="generate">生成（消耗 {{cost}} 次额度）</button>
+      <!-- 余额为 0 **不弹全屏付费墙**，只把人送到「额度从哪来」 -->
+      <button class="hc-primary-btn" wx:else bindtap="openVip">看看额度怎么拿</button>
+    </view>
+  </block>
+
+  <!-- 生成中：写清楚在做什么、可取消 -->
+  <block wx:elif="{{stage === 'generating'}}">
+    <view class="gen">
+      <view class="spinner"></view>
+      <text class="gen-title">正在搭建「{{scenario.title}}」场景…</text>
+      <text class="gen-sub">在把你这 {{targets.length}} 个待复习的词编进对话里</text>
+      <view class="ghost-btn" bindtap="cancelGenerate">取消</view>
+    </view>
+  </block>
+
+  <!-- A2 · 对话进行中 -->
+  <block wx:elif="{{stage === 'chat'}}">
+    <view class="targets {{folded ? 'is-folded' : ''}}" bindtap="toggleFold">
+      <text class="targets-label">可以用：</text>
+      <text class="targets-list" wx:if="{{!folded}}">{{targetLine}}</text>
+      <text class="targets-toggle">{{folded ? '展开' : '收起'}}</text>
+    </view>
+
+    <scroll-view class="chat" scroll-y scroll-into-view="{{anchor}}" scroll-with-animation>
+      <view class="msg msg-{{item.role}}" wx:for="{{turns}}" wx:key="key" id="m{{index}}">
+        <text class="msg-text">{{item.text}}</text>
+      </view>
+      <view id="bottom" class="chat-tail"></view>
+    </scroll-view>
+
+    <view class="composer">
+      <input class="composer-input" value="{{draft}}" bindinput="onDraft" bindconfirm="send"
+             placeholder="输入你的英文回复…" placeholder-class="ph" confirm-type="send" />
+      <view class="send-btn" bindtap="send">发送</view>
+    </view>
+    <view class="composer-foot">
+      <text class="composer-note">每轮对话可随时结束</text>
+      <text class="composer-end" bindtap="tryFinish">结束这一轮 →</text>
+    </view>
+  </block>
+
+  <!-- A3 · 结束与取词 -->
+  <block wx:else>
+    <scroll-view class="body" scroll-y>
+      <view class="sum hc-card">
+        <text class="sum-title">这轮用上了 {{usedCount}} 个词</text>
+        <text class="sum-sub">这是这一屏唯一的成绩：不打分、不评级、不给星。</text>
+      </view>
+
+      <view class="row hc-card" wx:for="{{usage}}" wx:key="term">
+        <text class="row-term">{{item.term}}</text>
+        <text class="row-note {{item.times > 0 ? 'is-ok' : ''}}">{{item.times > 0 ? '你用了 ' + item.times + ' 次' : '没用上'}}</text>
+      </view>
+
+      <view class="hc-section-title sec" wx:if="{{newWords.length > 0}}">对话里出现、你没收过的</view>
+      <view class="row hc-card" wx:for="{{newWords}}" wx:key="term">
+        <view class="row-left">
+          <text class="row-term">{{item.term}}</text>
+          <text class="row-meaning">{{item.meaning}}</text>
+        </view>
+        <view class="add-btn {{item.added ? 'is-on' : ''}}" data-t="{{item.term}}" bindtap="capture">
+          {{item.added ? '已收进' : '＋ 收进生词'}}
+        </view>
+      </view>
+      <view class="tail"></view>
+    </scroll-view>
+
+    <view class="footer footer-two">
+      <view class="ghost-btn" bindtap="again">再来一轮（{{cost}} 次）</view>
+      <button class="hc-primary-btn" bindtap="done">完成</button>
+    </view>
+  </block>
+
+  <!-- 退出确认：已消耗的 Credit 不退，要说清楚 -->
+  <view class="mask" wx:if="{{exitConfirm}}" catchtouchmove="noop">
+    <view class="dialog" catchtap="noop">
+      <text class="dlg-title">结束这一轮练习？</text>
+      <text class="dlg-sub">这一轮已经扣掉的 {{cost}} 次额度不退。结束后可以看看这轮用上了哪几个词。</text>
+      <view class="dlg-actions">
+        <view class="btn-ghost" bindtap="cancelExit">继续练</view>
+        <button class="btn-ok" bindtap="confirmExit">结束</button>
+      </view>
+    </view>
+  </view>
+
+</view>

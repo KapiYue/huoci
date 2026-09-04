@@ -1,5 +1,5 @@
-<!-- ② 学习卡片（push 页）。《执行方案》§6.2 —— P2 的命门 -->
-<view class="study">
+<!-- ② 学习卡片（push 页）。`design.md` §5.4 S5 —— P2 的命门 -->
+<view class="study {{themeClass}}">
 
   <!-- 顶部进度 -->
   <view class="topbar" wx:if="{{!done}}">
@@ -13,21 +13,33 @@
   <!-- 卡片 -->
   <view class="card hc-card" wx:if="{{!done}}">
     <view class="card-body">
-      <view class="term-row">
-        <view>
-          <text class="term">{{card.term}}</text>
-          <view class="phonetic-row">
-            <text class="phonetic hc-mono">{{card.phonetic}}</text>
-            <view class="speak" bindtap="playAudio" wx:if="{{card.audioUrl}}">🔊</view>
+      <!-- 语境优先：正面直接给原句、把词挖空。底座词没有 cloze，自动落到下面的 classic 分支 -->
+      <block wx:if="{{cardMode === 'context' && card.cloze && !revealed}}">
+        <view class="cloze-label">从这句话里想起它</view>
+        <view class="cloze">"{{card.cloze}}"</view>
+        <view class="ctx-source"><view class="dot"></view><text>{{card.contextSource}}</text></view>
+      </block>
+
+      <block wx:else>
+        <view class="term-row">
+          <view>
+            <text class="term">{{card.term}}</text>
+            <view class="phonetic-row">
+              <text class="phonetic hc-mono">{{card.phonetic}}</text>
+              <!-- 🔊 留着等 TTS。`wx:if` 恒不显示 = 等于没画。
+                   🔴 TTS 就位前**不许给 audioUrl 赋值** -->
+              <view class="speak" bindtap="playAudio" wx:if="{{card.audioUrl}}">🔊</view>
+            </view>
           </view>
+          <text class="pos hc-mono" wx:if="{{card.pos}}">{{card.pos}}</text>
         </view>
-        <text class="pos hc-mono" wx:if="{{card.pos}}">{{card.pos}}</text>
-      </view>
+      </block>
 
       <view class="divider"></view>
 
-      <!-- capture 词：原句 + 来源。这是活词全部差异化的落点 -->
-      <block wx:if="{{card.contextSentence}}">
+      <!-- capture 词：原句 + 来源。这是活词全部差异化的落点。
+           语境模式的正面已经给过挖空句了，翻面才把完整原句补上 -->
+      <block wx:if="{{card.contextSentence && (cardMode !== 'context' || !card.cloze || revealed)}}">
         <view class="ctx-label">🧭 真实撞见原句</view>
         <view class="ctx">"{{card.contextSentence}}"</view>
         <view class="ctx-source"><view class="dot"></view><text>{{card.contextSource}}</text></view>
@@ -82,6 +94,12 @@
 
     <view class="finish-note" wx:if="{{pending > 0}}">
       有 {{pending}} 条还没发出去，联网后会自动补上，不会丢。
+    </view>
+
+    <!-- R5：这一轮里有底座词才给这句。**不打断学习**，只在结束页出现一次 -->
+    <view class="reader-hint" wx:if="{{showReaderHint}}" bindtap="openReader">
+      <text class="reader-hint-title">想让卡片带上原句？</text>
+      <text class="reader-hint-sub">读一篇你自己的文章，点词就能连原句和来源一起收下 →</text>
     </view>
 
     <button class="hc-primary-btn finish-btn" bindtap="back">返回今日主页</button>

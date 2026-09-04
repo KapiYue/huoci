@@ -6,6 +6,8 @@ export interface Session {
   userId: string;
   email: string | null;
   displayName: string;
+  /** 微信头像。S0 是「一次点击」，不弹授权层，所以多数微信用户这里是 null（界面回落到「活」字标） */
+  avatarUrl: string | null;
   /** 登录方式。绑定过词鲸账号的走 'password' */
   provider: 'wechat' | 'password';
 }
