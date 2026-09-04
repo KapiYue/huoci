@@ -9,6 +9,7 @@
   "scripts": {
     "typecheck": "npm run typecheck --workspaces --if-present",
     "test": "npm run test --workspaces --if-present",
+    "parity": "node tools/ui-parity/cli.mjs",
     "sync:shared": "npm run sync:shared -w @huoci/miniprogram"
   },
   "devDependencies": {
