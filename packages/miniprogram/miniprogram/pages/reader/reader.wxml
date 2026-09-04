@@ -1,0 +1,97 @@
+<!-- 阅读器 R1–R4。还原对象：`docs/prototype/src/components/ReaderModal.tsx`。
+     形态三条：粘贴文本（不抓链接）· 点词（不划词）· 正文只留本地（不上传）。 -->
+<view class="hc-page {{themeClass}}">
+
+  <!-- R1 · 贴入文章 -->
+  <block wx:if="{{stage === 'paste'}}">
+    <textarea class="paste" value="{{text}}" bindinput="onText" maxlength="-1"
+              placeholder="把你正在读的英文粘进来 —— 技术文档、邮件、新闻都行。点词就能连原句一起收下。"
+              placeholder-class="ph" />
+    <view class="counter {{overflow ? 'is-warn' : ''}}">
+      {{text.length}} / {{max}} 字符{{overflow ? '：超出的部分会被截断，不会悄悄丢' : ''}}
+    </view>
+
+    <input class="field" value="{{title}}" bindinput="onTitle"
+           placeholder="来源（选填）例：Stripe Docs / 一封工作邮件" placeholder-class="ph" />
+
+    <button class="hc-primary-btn" bindtap="start" disabled="{{text.length === 0}}">开始阅读</button>
+
+    <view class="last" wx:if="{{last}}" bindtap="resumeLast">
+      上次读的：{{last.title}}（{{last.ago}} · 收了 {{last.capturedCount}} 个词）
+    </view>
+
+    <view class="tip">
+      粘进来的正文只留在你手机上，不会上传。云端只保存你收下的那个词和它所在的那一句。
+    </view>
+  </block>
+
+  <!-- R2 · 阅读 -->
+  <block wx:elif="{{stage === 'read'}}">
+    <view class="readbar">
+      <text class="readbar-title">{{title || '未命名来源'}}</text>
+      <text class="readbar-count">收了 {{capturedCount}} 个词</text>
+    </view>
+
+    <view class="once-tip" wx:if="{{showOnceTip}}">点任意单词看释义</view>
+
+    <scroll-view class="article" scroll-y>
+      <text class="tok {{item.w ? 'is-word' : ''}} {{item.hit ? 'is-hit' : ''}}"
+            wx:for="{{tokens}}" wx:key="i" data-i="{{index}}" bindtap="tapToken">{{item.t}}</text>
+      <view class="tail"></view>
+    </scroll-view>
+
+    <view class="readfoot">
+      <view class="ghost-btn" bindtap="finish">读完了</view>
+    </view>
+  </block>
+
+  <!-- R4 · 读完 -->
+  <block wx:else>
+    <scroll-view class="body" scroll-y>
+      <text class="done-title">这篇收了 {{capturedCount}} 个词</text>
+      <view class="done-row hc-card" wx:for="{{captured}}" wx:key="term">
+        <text class="done-term">{{item.term}}</text>
+        <text class="done-meaning">{{item.meaning}}</text>
+      </view>
+      <text class="done-note" wx:if="{{capturedCount > 0}}">它们明天会出现在你的复习里。</text>
+      <view class="tail"></view>
+    </scroll-view>
+    <view class="footer-two">
+      <view class="ghost-btn" bindtap="again">再读一篇</view>
+      <button class="hc-primary-btn" bindtap="close">完成</button>
+    </view>
+  </block>
+
+  <!-- R3 · 释义弹层。半屏 popup，不跳转、不开新页 -->
+  <view class="sheet-mask" wx:if="{{popup}}" bindtap="closePopup" catchtouchmove="noop">
+    <view class="sheet" catchtap="noop">
+      <view class="sheet-head">
+        <text class="sheet-term">{{picked.term}}</text>
+        <text class="sheet-phonetic hc-mono">{{picked.phonetic}}</text>
+      </view>
+
+      <view class="sheet-loading" wx:if="{{picked.loading}}">
+        <view class="spinner"></view>
+        <text class="sheet-sub">正在查…</text>
+      </view>
+
+      <view class="sheet-error" wx:elif="{{picked.error}}">
+        <text class="sheet-sub">{{picked.error}}</text>
+        <view class="ghost-btn small" bindtap="retryLookup">再点一次</view>
+      </view>
+
+      <block wx:else>
+        <text class="sheet-meaning">{{picked.meaning}}</text>
+        <view class="sheet-context" wx:if="{{picked.sentence}}">
+          <text class="sheet-label">在这句话里</text>
+          <text class="sheet-sentence">“{{picked.sentence}}”</text>
+        </view>
+        <button class="hc-primary-btn" wx:if="{{!picked.saved}}" bindtap="capture" loading="{{picked.saving}}">
+          ＋ 加入我的活词
+        </button>
+        <view class="hero-done" wx:else>已在你的活词里</view>
+      </block>
+    </view>
+  </view>
+
+</view>

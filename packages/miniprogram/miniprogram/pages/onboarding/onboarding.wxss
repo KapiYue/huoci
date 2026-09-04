@@ -1,0 +1,187 @@
+/* 首启三屏。配色一律走 tokens.wxss，不写死颜色。 */
+
+.ob {
+  display: flex;
+  flex-direction: column;
+  padding-top: 32rpx;
+}
+
+/* ---------- 进度点 ---------- */
+.dots {
+  display: flex;
+  justify-content: center;
+  gap: 12rpx;
+  margin-bottom: 48rpx;
+}
+.dot {
+  width: 48rpx;
+  height: 8rpx;
+  border-radius: var(--r-full);
+  background: var(--border-strong);
+  transition: background 0.2s;
+}
+.dot.is-on { background: var(--brand-600); }
+
+/* ---------- 标题区 ---------- */
+.head { margin-bottom: 40rpx; }
+.title {
+  display: block;
+  font-size: 44rpx;
+  font-weight: 800;
+  line-height: 1.3;
+  color: var(--text-1);
+}
+.sub {
+  display: block;
+  margin-top: 16rpx;
+  font-size: 26rpx;
+  color: var(--text-3);
+  line-height: 1.6;
+}
+
+/* ---------- S1 场景 ---------- */
+.scene-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20rpx;
+}
+.scene {
+  position: relative;
+  width: calc((100% - 20rpx) / 2);
+  padding: 28rpx 24rpx;
+  border-radius: var(--r-md);
+  background: var(--surface);
+  border: 2rpx solid var(--border);
+  box-shadow: var(--shadow-xs);
+}
+.scene.is-on {
+  border-color: var(--brand-600);
+  background: var(--st-captured-bg);
+}
+.scene-icon { display: block; font-size: 40rpx; line-height: 1; }
+.scene-label {
+  display: block;
+  margin-top: 16rpx;
+  font-size: 28rpx;
+  font-weight: 700;
+  color: var(--text-1);
+}
+.scene-desc {
+  display: block;
+  margin-top: 6rpx;
+  font-size: 22rpx;
+  color: var(--text-4);
+}
+.scene-tick {
+  position: absolute;
+  top: 20rpx;
+  right: 20rpx;
+  width: 36rpx;
+  height: 36rpx;
+  border-radius: var(--r-full);
+  background: var(--brand-600);
+  color: #fff;
+  font-size: 22rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ---------- S2 词表 ---------- */
+.word-scroll {
+  flex: 1;
+  height: calc(100vh - 460rpx);
+}
+.word-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16rpx;
+}
+.word {
+  padding: 20rpx 28rpx;
+  border-radius: var(--r-full);
+  background: var(--surface);
+  border: 2rpx solid var(--border);
+  font-size: 30rpx;
+  color: var(--text-2);
+  box-shadow: var(--shadow-xs);
+}
+.word.is-on {
+  background: linear-gradient(90deg, var(--brand-600), var(--indigo-600));
+  border-color: transparent;
+  color: #fff;
+  font-weight: 700;
+}
+.scroll-pad { height: 40rpx; }
+
+/* ---------- S3 结果 ---------- */
+.result {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 0 24rpx;
+}
+.result-mark {
+  width: 128rpx;
+  height: 128rpx;
+  border-radius: var(--r-xl);
+  background: linear-gradient(135deg, var(--brand-600), var(--indigo-600));
+  color: #fff;
+  font-size: 56rpx;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow-btn);
+  margin-bottom: 48rpx;
+}
+.result-title {
+  font-size: 44rpx;
+  font-weight: 800;
+  color: var(--text-1);
+  line-height: 1.35;
+}
+.result-sub {
+  margin-top: 20rpx;
+  font-size: 27rpx;
+  color: var(--text-3);
+  line-height: 1.7;
+}
+.result-note {
+  margin-top: 16rpx;
+  font-size: 24rpx;
+  color: var(--text-4);
+}
+
+/* ---------- 底部 ---------- */
+.foot {
+  margin-top: 48rpx;
+  width: 100%;
+}
+.foot-fixed {
+  position: sticky;
+  bottom: 0;
+  padding: 24rpx 0 calc(env(safe-area-inset-bottom) + 24rpx);
+  background: linear-gradient(180deg, transparent, var(--bg-bottom) 32rpx);
+}
+.skip {
+  display: block;
+  margin-top: 28rpx;
+  text-align: center;
+  font-size: 26rpx;
+  color: var(--text-4);
+}
+
+/* —— `[09-03]` 按原型补：S1 的用时徽章 + S3 的结果卡 —— */
+.badge {
+  display: inline-block; margin-bottom: 16rpx; padding: 8rpx 20rpx;
+  border-radius: var(--r-full); background: var(--st-captured-bg);
+  color: var(--brand-text); font-size: 20rpx; font-weight: 800;
+}
+.result-card { margin: 32rpx 0; padding: 28rpx; border-radius: var(--r-lg); text-align: left; }
+.rc-row { display: flex; align-items: baseline; justify-content: space-between; padding: 10rpx 0; }
+.rc-label { font-size: 22rpx; color: var(--text-3); }
+.rc-value { font-size: 24rpx; font-weight: 800; color: var(--text-1); max-width: 60%; text-align: right; }

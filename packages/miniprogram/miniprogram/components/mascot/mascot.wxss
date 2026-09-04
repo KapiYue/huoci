@@ -1,39 +1,164 @@
-.mascot { display: flex; align-items: center; gap: 16rpx; }
+/* 坐标全部由 CuteMascot.tsx 的 SVG 换算而来：left/top/width/height = SVG 值 × 1.6rpx。
+   改形状请回去对照那份 SVG，不要凭手感调。 */
 
-.face {
-  position: relative; flex: none;
-  width: 88rpx; height: 88rpx; border-radius: 36rpx;
-  background: linear-gradient(160deg, #c4b5fd, #a78bfa 60%, #8b5cf6);
+.mascot { display: flex; align-items: center; gap: 20rpx; }
+
+.bot {
+  position: relative;
+  flex: none;
+  width: 160rpx;
+  height: 160rpx;
+  animation: hc-bot-float 3s ease-in-out infinite;
+}
+
+/* 原型是 blur-xl 的光晕。用 radial-gradient 而不是 filter: blur——
+   后者在低端安卓上会把整个页面推进合成层，代价与收益不成比例。 */
+.aura {
+  position: absolute;
+  left: 8rpx;
+  top: 14rpx;
+  width: 144rpx;
+  height: 130rpx;
+  border-radius: var(--r-full);
+  background: radial-gradient(
+    closest-side,
+    rgba(192, 132, 252, 0.5),
+    rgba(244, 114, 182, 0.24) 68%,
+    rgba(244, 114, 182, 0) 100%
+  );
+}
+
+/* 耳朵（ellipse cx14/86 cy48 rx8 ry12，各自外旋 15°） */
+.ear {
+  position: absolute;
+  top: 58rpx;
+  width: 26rpx;
+  height: 38rpx;
+  border-radius: var(--r-full);
+  background: linear-gradient(135deg, #e9d5ff, #a855f7);
+}
+.ear-l { left: 10rpx; transform: rotate(-15deg); }
+.ear-r { right: 10rpx; transform: rotate(15deg); }
+
+/* 头（ellipse cx50 cy48 rx36 ry32 + 2.5 白描边） */
+.head {
+  position: absolute;
+  left: 22rpx;
+  top: 26rpx;
+  width: 115rpx;
+  height: 102rpx;
+  border: 4rpx solid #ffffff;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #f5edff 0%, #e5d4ff 40%, #c4a8ff 100%);
   box-shadow: 0 8rpx 20rpx rgba(139, 92, 246, 0.28);
 }
+
+/* 面罩（rect x24 y28 w52 h38 r19） */
+.visor {
+  position: absolute;
+  left: 38rpx;
+  top: 45rpx;
+  width: 83rpx;
+  height: 61rpx;
+  border-radius: 30rpx;
+  background: linear-gradient(180deg, #2e1065, #4c1d95);
+}
+
+/* 弯月眼（path M32,46 Q38,38 44,46）：只留上边框 + 50% 圆角就是那条弧 */
 .eye {
-  position: absolute; top: 34rpx; width: 12rpx; height: 16rpx;
-  border-radius: 8rpx; background: #1e1b4b;
+  position: absolute;
+  top: 61rpx;
+  width: 19rpx;
+  height: 13rpx;
+  border-top: 5rpx solid #a7f3d0;
+  border-radius: 50%;
 }
-.eye-l { left: 24rpx; }
-.eye-r { right: 24rpx; }
+.eye-l { left: 51rpx; }
+.eye-r { left: 90rpx; }
+
+/* 腮红（ellipse cy54 rx4 ry2，压在面罩上） */
 .cheek {
-  position: absolute; top: 52rpx; width: 14rpx; height: 8rpx;
-  border-radius: var(--r-full); background: rgba(244, 114, 182, 0.65);
+  position: absolute;
+  top: 85rpx;
+  width: 13rpx;
+  height: 7rpx;
+  border-radius: var(--r-full);
+  background: #f472b6;
+  opacity: 0.8;
 }
-.cheek-l { left: 14rpx; }
-.cheek-r { right: 14rpx; }
-.mouth {
-  position: absolute; top: 54rpx; left: 50%; margin-left: -10rpx;
-  width: 20rpx; height: 10rpx;
-  border-bottom: 3rpx solid #1e1b4b; border-radius: 0 0 20rpx 20rpx;
+.cheek-l { left: 42rpx; }
+.cheek-r { left: 106rpx; }
+
+/* 天线 + 发光顶珠（line y8→16，circle cy7 r4.5，外加一点高光） */
+.antenna {
+  position: absolute;
+  left: 78rpx;
+  top: 13rpx;
+  width: 5rpx;
+  height: 14rpx;
+  border-radius: var(--r-full);
+  background: #c4b5fd;
+}
+.antenna-tip {
+  position: absolute;
+  left: 73rpx;
+  top: 4rpx;
+  width: 15rpx;
+  height: 15rpx;
+  border-radius: var(--r-full);
+  background: #f43f5e;
+}
+.antenna-tip::after {
+  content: '';
+  position: absolute;
+  left: 4rpx;
+  top: 2rpx;
+  width: 5rpx;
+  height: 5rpx;
+  border-radius: var(--r-full);
+  background: #ffffff;
+}
+
+/* 悬浮的身体球（ellipse cx50 cy86 rx16 ry11） */
+.body {
+  position: absolute;
+  left: 54rpx;
+  top: 120rpx;
+  width: 51rpx;
+  height: 35rpx;
+  border: 3rpx solid #ffffff;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #f5edff 0%, #e5d4ff 40%, #c4a8ff 100%);
+}
+
+@keyframes hc-bot-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10rpx); }
 }
 
 .bubble {
-  position: relative; flex: 1;
+  position: relative;
+  flex: 1;
   padding: 20rpx 24rpx;
-  background: var(--surface); border: 2rpx solid var(--border);
-  border-radius: var(--r-md); box-shadow: var(--shadow-xs);
+  background: var(--surface);
+  border: 2rpx solid var(--border);
+  border-radius: var(--r-md);
+  box-shadow: var(--shadow-xs);
 }
 .bubble::before {
-  content: ''; position: absolute; left: -12rpx; top: 34rpx;
-  width: 20rpx; height: 20rpx; transform: rotate(45deg);
+  content: '';
+  position: absolute;
+  left: -12rpx;
+  top: 34rpx;
+  width: 20rpx;
+  height: 20rpx;
+  transform: rotate(45deg);
   background: var(--surface);
-  border-left: 2rpx solid var(--border); border-bottom: 2rpx solid var(--border);
+  border-left: 2rpx solid var(--border);
+  border-bottom: 2rpx solid var(--border);
 }
-.bubble-text { font-size: 22rpx; line-height: 1.65; color: var(--text-2); }
+.bubble-text {
+  font-size: 24rpx;
+  line-height: 1.65;
+  color: var(--text-2);
+}

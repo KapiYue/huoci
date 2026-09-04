@@ -1,0 +1,151 @@
+<!-- AI 额度页。
+     `[09-03 裁决]` **小程序内不卖 Credits**（理由见 services/membership.ts 抬头）：
+     iOS 端规则上就卖不了、安卓端商户号没通、现阶段卖也验证不了任何东西。
+     所以这一页现在是「额度从哪来」，不是「充值」。
+
+     售卖那套（充值档 / 微信支付 / M3 确认 / M4 三态）**代码没删**，被 sellEnabled 关着，
+     P7 打开时 🔴 必须同时按端隐藏：iOS 端不许出现任何充值入口与价格。 -->
+<scroll-view class="hc-page {{themeClass}}" scroll-y>
+
+  <!-- 余额。余额为 0 时要说清楚「停的是哪些功能」 -->
+  <view class="balance hc-card {{credits > 0 ? '' : 'is-zero'}}">
+    <text class="balance-label">当前可用</text>
+    <view class="balance-row">
+      <text class="balance-num hc-mono">{{credits}}</text>
+      <text class="balance-unit">次</text>
+    </view>
+    <text class="balance-note">{{balanceNote}}</text>
+    <view class="vip-tag" wx:if="{{isVip}}">批量档已购 · 有效期至 {{vipExpiry}}</view>
+  </view>
+
+  <!-- ═══ 不卖模式：额度从哪来 ═══ -->
+  <block wx:if="{{!sellEnabled}}">
+    <view class="hc-section-title sec">额度从哪来</view>
+
+    <view class="src hc-card">
+      <view class="src-icon">🌤</view>
+      <view class="src-text">
+        <text class="src-title">每天保底 {{dailyFree}} 次</text>
+        <text class="src-sub">每天第一次打开自动补足。用不完不清零，也不会越攒越多 —— 是保底，不是日结。</text>
+      </view>
+    </view>
+
+    <view class="src hc-card" wx:if="{{adReady}}">
+      <view class="src-icon">🎬</view>
+      <view class="src-text">
+        <text class="src-title">看一条广告 + {{adReward}} 次</text>
+        <text class="src-sub">每天最多 {{adLimit}} 条（今日已看 {{adWatched}}/{{adLimit}}）</text>
+      </view>
+      <button class="src-btn {{adDisabled ? 'is-off' : ''}}" bindtap="watchAd" disabled="{{adDisabled}}">
+        {{adBtnText}}
+      </button>
+    </view>
+    <view class="src hc-card is-muted" wx:else>
+      <view class="src-icon">🎬</view>
+      <view class="src-text">
+        <text class="src-title">看广告换额度</text>
+        <text class="src-sub">{{adHint}}</text>
+      </view>
+    </view>
+
+    <view class="src hc-card">
+      <view class="src-icon">📅</view>
+      <view class="src-text">
+        <text class="src-title">连续学习满 {{streakMilestone}} 天 + {{streakBonus}} 次</text>
+        <text class="src-sub">每个里程碑发一次。断了不补发，也不会弹任何东西催你。</text>
+      </view>
+    </view>
+
+    <view class="notice">
+      <text class="notice-text">小程序里没有付费项目。AI 场景是唯一消耗额度的功能，其余全部免费。</text>
+    </view>
+  </block>
+
+  <!-- ═══ 售卖模式（P7 才打开）═══ -->
+  <block wx:else>
+    <view class="hc-section-title sec">充值档位</view>
+    <view class="plans">
+      <view class="plan hc-card {{item.id === selectedId ? 'is-on' : ''}}"
+            wx:for="{{packs}}" wx:key="id" data-id="{{item.id}}" bindtap="selectPack">
+        <view class="plan-left">
+          <view class="radio {{item.id === selectedId ? 'is-on' : ''}}"></view>
+          <view class="plan-name-row">
+            <text class="plan-name">{{item.credits}} 次</text>
+            <text class="plan-bonus" wx:if="{{item.label}}">{{item.label}}</text>
+          </view>
+        </view>
+        <text class="plan-price hc-mono">{{item.price}}</text>
+      </view>
+    </view>
+  </block>
+
+  <!-- 消耗口径写在页面上，不做暗扣 -->
+  <view class="usage">
+    <text class="usage-title">额度用在哪</text>
+    <text class="usage-body">AI 场景对话 1 次 / 轮 · AI 场景短文 1 次 / 篇。每一处消耗的地方旁边都标了价。</text>
+  </view>
+
+  <!-- 「一直免费」必须写在页面上，且把学习主链路逐项列出来 -->
+  <view class="free hc-card">
+    <text class="free-title">🛡 ─── 一直免费 ───</text>
+    <text class="free-list">生词收藏 · 复习调度 · 查词 · 阅读器 · 排行榜 · 词包</text>
+    <text class="free-note">活词的全部背词与阅读功能永久免费。只有每次调用都要花钱的大模型计算才消耗额度。</text>
+  </view>
+
+  <view class="tail"></view>
+</scroll-view>
+
+<!-- 底部支付条：只有售卖模式才有 -->
+<view class="paybar" wx:if="{{sellEnabled}}">
+  <button class="hc-primary-btn" bindtap="openConfirm">微信支付 {{selected.price}} 充值</button>
+</view>
+
+<!-- M3 确认 / 支付中 · M4 成功 / 取消 / 失败 -->
+<view class="mask" wx:if="{{payState !== 'idle'}}" catchtouchmove="noop">
+  <view class="dialog" catchtap="noop">
+
+    <block wx:if="{{payState === 'confirm'}}">
+      <text class="dlg-title">确认微信支付订单</text>
+      <view class="order">
+        <text class="order-label">购买项目</text>
+        <text class="order-name">{{selected.credits}} 次{{selected.label ? '（' + selected.label + '）' : ''}}</text>
+        <text class="order-price hc-mono">实付金额：{{selected.price}}</text>
+        <text class="order-kind">一次性买断，不是订阅，不会自动续费。</text>
+      </view>
+      <view class="dlg-actions">
+        <view class="btn-ghost" bindtap="cancelPay">取消</view>
+        <button class="btn-ok" bindtap="confirmPay">立即支付</button>
+      </view>
+    </block>
+
+    <block wx:elif="{{payState === 'paying'}}">
+      <view class="paying">
+        <view class="spinner"></view>
+        <text class="dlg-title">正在调起微信支付…</text>
+        <text class="dlg-sub">正在等待微信支付回调到账</text>
+      </view>
+    </block>
+
+    <block wx:elif="{{payState === 'success'}}">
+      <view class="result">
+        <view class="result-icon is-ok">✓</view>
+        <text class="dlg-title">充值成功</text>
+        <text class="dlg-sub">额度已即时到账，可以直接用。</text>
+        <button class="btn-ok wide" bindtap="finishSuccess">返回</button>
+      </view>
+    </block>
+
+    <block wx:else>
+      <view class="result">
+        <view class="result-icon is-bad">!</view>
+        <text class="dlg-title">支付未能完成</text>
+        <text class="dlg-sub">{{payError}}</text>
+        <view class="dlg-actions">
+          <view class="btn-ghost" bindtap="cancelPay">取消</view>
+          <button class="btn-ok" bindtap="confirmPay">重试</button>
+        </view>
+      </view>
+    </block>
+
+  </view>
+</view>

@@ -1,0 +1,12 @@
+<view class="hc-page settings {{themeClass}}">
+  <view class="hc-section-title sec">每日目标</view>
+  <view class="group hc-card">
+    <view wx:for="{{options}}" wx:key="*this" class="item" data-goal="{{item}}" bindtap="pick">
+      <text class="item-label">{{item}} 个词</text>
+      <text class="item-note" wx:if="{{item === 20}}">默认 · 约 8 分钟</text>
+      <text class="item-note" wx:else></text>
+      <text class="item-tick" wx:if="{{goal === item}}">✓</text>
+    </view>
+  </view>
+  <text class="foot-note">到期复习优先，新词按「目标 − 到期数」补。断更欠账单日上限是目标的 1.5 倍，不会一次性倾泻给你。</text>
+</view>

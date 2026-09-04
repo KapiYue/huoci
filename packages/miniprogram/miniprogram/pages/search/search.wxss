@@ -1,4 +1,60 @@
-.placeholder { padding-top: 120rpx; }
-.ph-card { padding: 48rpx 32rpx; text-align: center; border-radius: var(--r-md); }
-.ph-title { display: block; font-size: 32rpx; font-weight: 800; color: var(--text-1); }
-.ph-body { display: block; font-size: 22rpx; color: var(--text-3); margin-top: 16rpx; line-height: 1.7; }
+.search { padding-top: 24rpx; display: flex; flex-direction: column; min-height: 100vh; }
+
+/* —— 搜索条 —— */
+.bar {
+  display: flex; align-items: center; gap: 16rpx;
+  height: 96rpx; padding: 0 24rpx;
+  background: var(--surface); border: 2rpx solid var(--border);
+  border-radius: var(--r-md); box-shadow: var(--shadow-xs);
+}
+.bar-icon { font-size: 28rpx; }
+.bar-input { flex: 1; font-size: 30rpx; color: var(--text-1); }
+.ph { color: var(--text-4); }
+.bar-clear { padding: 0 8rpx; font-size: 26rpx; color: var(--text-4); }
+
+/* —— 空 / 加载 / 无结果 / 失败 —— */
+.hint { padding: 96rpx 32rpx; text-align: center; }
+.hint-title { display: block; font-size: 30rpx; font-weight: 800; color: var(--text-1); }
+.hint-sub { display: block; margin-top: 16rpx; font-size: 24rpx; color: var(--text-3); line-height: 1.7; }
+
+/* —— 结果卡 —— */
+.card { margin-top: 32rpx; padding: 32rpx 28rpx; }
+.card-head { display: flex; align-items: baseline; gap: 16rpx; }
+.term { font-size: 44rpx; font-weight: 800; color: var(--text-1); }
+.phonetic { font-size: 24rpx; color: var(--text-3); }
+.speak { margin-left: auto; font-size: 32rpx; }
+.speak.is-on { opacity: 0.4; }
+
+.part { display: flex; gap: 16rpx; margin-top: 20rpx; }
+.pos {
+  flex: none; min-width: 72rpx; padding: 2rpx 12rpx; height: 36rpx; line-height: 32rpx;
+  text-align: center; font-size: 20rpx; font-weight: 800;
+  color: var(--brand-text); background: var(--st-captured-bg);
+  border: 2rpx solid var(--st-captured-bd); border-radius: var(--r-full);
+}
+.pos-meaning { flex: 1; font-size: 28rpx; color: var(--text-1); line-height: 1.5; }
+
+.example {
+  margin-top: 28rpx; padding: 20rpx 24rpx;
+  background: var(--surface-sunk); border-radius: var(--r-sm);
+}
+.example-en { display: block; font-size: 24rpx; color: var(--text-2); line-height: 1.7; }
+.example-zh { display: block; margin-top: 8rpx; font-size: 22rpx; color: var(--text-3); }
+
+/* —— 底部主操作 —— */
+.foot { margin-top: auto; padding: 32rpx 0 calc(env(safe-area-inset-bottom) + 32rpx); }
+.added {
+  height: 104rpx; display: flex; align-items: center; justify-content: center;
+  border-radius: var(--r-md); font-size: 28rpx; font-weight: 700;
+  color: var(--st-activated-fg); background: var(--st-activated-bg);
+  border: 2rpx solid var(--st-activated-bd);
+}
+
+/* —— `[09-03]` 空态里的高频场景词（原型 SearchTab） —— */
+.chips-title { display: block; margin-top: 44rpx; font-size: 23rpx; font-weight: 800; color: var(--text-2); }
+.chips { display: flex; flex-wrap: wrap; gap: 16rpx; margin-top: 20rpx; }
+.chip {
+  padding: 12rpx 24rpx; border-radius: var(--r-sm);
+  background: var(--surface); border: 2rpx solid var(--border-strong);
+  font-size: 23rpx; font-weight: 700; color: var(--brand-text);
+}

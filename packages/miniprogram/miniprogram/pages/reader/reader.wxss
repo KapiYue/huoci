@@ -1,0 +1,108 @@
+.hc-page { display: flex; flex-direction: column; height: 100vh; padding-top: 24rpx; padding-bottom: 0; }
+
+/* —— R1 贴入 —— */
+.paste {
+  width: 100%; height: 46vh; padding: 28rpx;
+  border-radius: var(--r-lg); border: 2rpx solid var(--border-strong);
+  background: var(--surface); font-size: 27rpx; line-height: 1.8; color: var(--text-1);
+}
+.ph { color: var(--text-4); }
+.counter { padding: 12rpx 8rpx; font-size: 20rpx; color: var(--text-4); }
+.counter.is-warn { color: var(--warn-600); }
+.field {
+  width: 100%; height: 88rpx; padding: 0 24rpx; margin-bottom: 28rpx;
+  border-radius: var(--r-md); border: 2rpx solid var(--border-strong);
+  background: var(--surface); font-size: 26rpx; color: var(--text-1);
+}
+.last {
+  margin-top: 24rpx; padding: 24rpx; border-radius: var(--r-md);
+  border: 2rpx dashed var(--border-strong);
+  font-size: 22rpx; font-weight: 700; color: var(--brand-text);
+}
+.tip { margin-top: 24rpx; padding: 0 8rpx; font-size: 20rpx; color: var(--text-4); line-height: 1.8; }
+
+/* —— R2 阅读 —— */
+.readbar { display: flex; align-items: baseline; justify-content: space-between; padding: 0 4rpx 16rpx; }
+.readbar-title {
+  font-size: 28rpx; font-weight: 800; color: var(--text-1);
+  max-width: 440rpx; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.readbar-count { font-size: 22rpx; font-weight: 700; color: var(--brand-text); }
+.once-tip {
+  align-self: center; padding: 10rpx 24rpx; margin-bottom: 16rpx; border-radius: var(--r-full);
+  background: var(--st-captured-bg); color: var(--brand-text); font-size: 21rpx; font-weight: 700;
+}
+
+.article {
+  flex: 1; min-height: 0; padding: 28rpx;
+  border-radius: var(--r-lg); background: var(--surface); border: 2rpx solid var(--border);
+}
+/* 排版按阅读体验做：行高松、字号可读。**不要**画成代码块 */
+.tok { font-size: 30rpx; line-height: 2; color: var(--text-1); }
+.tok.is-word { padding: 2rpx 0; }
+/* 已加入的词保持高亮，**永远不消失** —— 这是用户的进度可视化 */
+.tok.is-hit {
+  background: var(--st-captured-bg); color: var(--st-captured-fg);
+  border-bottom: 3rpx solid var(--brand-500); border-radius: 6rpx;
+}
+
+.readfoot { padding: 20rpx 0; padding-bottom: calc(env(safe-area-inset-bottom) + 20rpx); }
+
+/* —— R4 —— */
+.body { flex: 1; min-height: 0; }
+.done-title { display: block; padding: 20rpx 4rpx 24rpx; font-size: 40rpx; font-weight: 800; color: var(--text-1); }
+.done-row {
+  display: flex; align-items: baseline; gap: 20rpx;
+  padding: 24rpx 26rpx; margin-bottom: 14rpx; border-radius: var(--r-md);
+}
+.done-term { font-size: 28rpx; font-weight: 800; color: var(--text-1); }
+.done-meaning { flex: 1; min-width: 0; font-size: 22rpx; color: var(--text-3); }
+.done-note { display: block; margin-top: 24rpx; padding: 0 4rpx; font-size: 24rpx; font-weight: 700; color: var(--brand-text); }
+.footer-two {
+  display: flex; gap: 20rpx; align-items: center;
+  padding: 20rpx 0; padding-bottom: calc(env(safe-area-inset-bottom) + 20rpx);
+  border-top: 2rpx solid var(--border);
+}
+.footer-two .ghost-btn { flex: 1; margin: 0; }
+.footer-two .hc-primary-btn { flex: 1; }
+
+.ghost-btn {
+  height: 96rpx; display: flex; align-items: center; justify-content: center;
+  border-radius: var(--r-md); border: 2rpx solid var(--border-strong);
+  font-size: 27rpx; font-weight: 800; color: var(--brand-text);
+}
+.ghost-btn.small { height: 72rpx; margin-top: 20rpx; padding: 0 32rpx; font-size: 23rpx; }
+
+.tail { height: 40rpx; }
+
+/* —— R3 半屏弹层 —— */
+.sheet-mask { position: fixed; inset: 0; z-index: 60; background: rgba(2, 6, 23, 0.5); display: flex; align-items: flex-end; }
+.sheet {
+  width: 100%; padding: 40rpx 32rpx;
+  padding-bottom: calc(env(safe-area-inset-bottom) + 40rpx);
+  border-radius: var(--r-xl) var(--r-xl) 0 0;
+  background: var(--surface); border-top: 2rpx solid var(--border);
+}
+.sheet-head { display: flex; align-items: baseline; gap: 18rpx; }
+.sheet-term { font-size: 42rpx; font-weight: 800; color: var(--text-1); }
+.sheet-phonetic { font-size: 24rpx; font-weight: 700; color: var(--brand-text); }
+.sheet-meaning { display: block; margin-top: 16rpx; font-size: 28rpx; color: var(--text-2); line-height: 1.7; }
+.sheet-context {
+  margin: 24rpx 0 28rpx; padding: 24rpx; border-radius: var(--r-md);
+  background: var(--surface-sunk); border: 2rpx solid var(--border);
+}
+.sheet-label { display: block; font-size: 20rpx; font-weight: 800; color: var(--text-3); }
+.sheet-sentence { display: block; margin-top: 10rpx; font-size: 25rpx; line-height: 1.8; color: var(--text-2); }
+.sheet-sub { display: block; margin-top: 16rpx; font-size: 23rpx; color: var(--text-3); }
+.sheet-loading, .sheet-error { padding: 32rpx 0; text-align: center; }
+.spinner {
+  width: 56rpx; height: 56rpx; margin: 0 auto; border-radius: var(--r-full);
+  border: 6rpx solid var(--border-strong); border-top-color: var(--brand-600);
+  animation: spin 0.9s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.hero-done {
+  height: 96rpx; display: flex; align-items: center; justify-content: center;
+  border-radius: var(--r-md); background: var(--surface-sunk);
+  font-size: 26rpx; font-weight: 700; color: var(--text-3);
+}

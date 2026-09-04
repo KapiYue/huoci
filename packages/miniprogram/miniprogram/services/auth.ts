@@ -1,11 +1,11 @@
-// 登录与账号绑定。《执行方案》§6.0 第 0 屏 + §14.1 T2/T3。
+// 登录与账号绑定。`design.md` §5.3 S0 + §14.1 T2/T3。
 //
 // 两个并列入口，不是分叉流程：
 //   [微信一键登录]  新用户默认路径。wx.login 静默取 code → 网关 code2session
 //                   → service_role 查/建 auth user（按 openid 派生服务端密码）→ 原生 session
 //   [我有词鲸账号]  邮箱 + 密码，直打 /auth/v1/token?grant_type=password，零后端开发
 //
-// ⚠️ **无论走哪条路径都要先 wx.login 拿 openid 并存下**（§6.0 的红字）。
+// ⚠️ **无论走哪条路径都要先 wx.login 拿 openid 并存下**（§5.3 的红字）。
 //    msgSecCheck v2 必传 openid；邮箱登录的老用户若没走过 wx.login，网关手里没有 openid，
 //    一调 AI 内容就炸。这里用 attachOpenid() 兜住，**极易漏，别删**。
 
@@ -41,6 +41,7 @@ function toSession(r: SupabaseTokenResponse, provider: Session['provider']): Ses
     // T3 的实现约束：建 user 时网关必须把昵称塞进 raw_user_meta_data.display_name，
     // 否则 handle_new_user 的兜底 split_part(NULL,'@',1) 会让昵称为空。
     displayName: r.user.user_metadata?.display_name || '微信用户',
+    avatarUrl: r.user.user_metadata?.avatar_url || null,
     provider,
   };
 }
@@ -62,7 +63,11 @@ export function getOpenid(): string | null {
   return store.read<string | null>(store.SK.OPENID, null);
 }
 
-/** 路径一：微信一键登录。nickname / avatarUrl 来自 chooseAvatar + type="nickname" 输入框。 */
+/**
+ * 路径一：微信一键登录。**S0 传空对象** —— §5.3 S0 要的是「一次点击」，
+ * 插一个头像/昵称授权弹层就变成三次。昵称由网关兜底成 '微信用户'（T3），
+ * 想改去「我的」（S8）。参数留着是为了 S8 那条路复用同一个函数。
+ */
 export async function loginWithWeChat(profile: {
   nickname?: string;
   avatarUrl?: string;

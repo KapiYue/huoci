@@ -1,6 +1,222 @@
-<view class="hc-page placeholder">
-  <view class="ph-card hc-card">
-    <text class="ph-title">我的</text>
-    <text class="ph-body">{{note}}</text>
+<!-- ⑤ 我的。还原对象：`docs/prototype/src/components/ProfileTab.tsx`。
+     09-03 裁决：**原型为准**。会员状态卡 / 排行榜 / AI 场景 / 阅读器 / 学习卡片模式 /
+     主题三档 / 不参与排行榜开关，都是按原型加进来的。
+     仍然不加：App 下载引导（二维码、按钮、跳转都算） · banner 广告位 —— 那两条是审核红线。 -->
+<scroll-view class="hc-page {{themeClass}}" scroll-y>
+
+  <!-- 用户头条 -->
+  <view class="banner hc-card">
+    <view class="banner-left">
+      <view class="avatar">
+        <image class="avatar-img" wx:if="{{avatarUrl}}" src="{{avatarUrl}}" mode="aspectFill" />
+        <text class="avatar-mark" wx:else>活</text>
+      </view>
+      <view class="banner-text">
+        <view class="banner-name-row">
+          <text class="banner-name">{{displayName}}</text>
+          <text class="tag {{isBound ? 'is-bound' : ''}}">{{isBound ? '已绑词鲸' : '微信用户'}}</text>
+        </view>
+        <text class="banner-id hc-mono">ID: {{shortId}}</text>
+      </view>
+    </view>
+    <view class="topup" bindtap="openVip">AI 额度</view>
+  </view>
+
+  <!-- M1 · AI Credits 状态卡。入口只有这一处 + 今日页顶部 -->
+  <view class="credits {{credits > 0 ? '' : 'is-zero'}}" bindtap="openVip">
+    <view class="credits-left">
+      <view class="credits-icon">🪙</view>
+      <view>
+        <view class="credits-row">
+          <text class="credits-num">AI 额度：{{credits}} 次</text>
+          <text class="credits-go">额度从哪来 →</text>
+        </view>
+        <text class="credits-note">{{creditsNote}}</text>
+      </view>
+    </view>
+    <text class="chev">›</text>
+  </view>
+
+  <!-- 我的学习数据 -->
+  <view class="stats hc-card">
+    <view class="stats-head">
+      <text class="hc-section-title">我的学习数据</text>
+      <text class="stats-streak hc-mono">连续学习 {{summary.streak_days}} 天</text>
+    </view>
+    <view class="stats-grid">
+      <view class="stat">
+        <text class="stat-label">已激活活词</text>
+        <text class="stat-num stat-act hc-mono">{{summary.activated_count}}</text>
+      </view>
+      <view class="stat">
+        <text class="stat-label">还没激活</text>
+        <text class="stat-num stat-learn hc-mono">{{learningCount}}</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 功能与设置 -->
+  <view class="group hc-card">
+
+    <view class="item" bindtap="openAccount">
+      <view class="item-icon ic-green">🛡</view>
+      <view class="item-text">
+        <text class="item-title">登录 / 账号管理</text>
+        <text class="item-sub">当前账号：{{displayName}}（微信 / 词鲸）</text>
+      </view>
+      <text class="chev">›</text>
+    </view>
+
+    <view class="item" bindtap="openLeaderboard">
+      <view class="item-icon ic-amber">🏆</view>
+      <view class="item-text">
+        <text class="item-title">活词周榜与好友 PK</text>
+        <text class="item-sub">按本周激活数排名，支持 10 题词义 PK</text>
+      </view>
+      <text class="chev">›</text>
+    </view>
+
+    <view class="item" bindtap="openAiScene">
+      <view class="item-icon ic-purple">🤖</view>
+      <view class="item-text">
+        <text class="item-title">AI 真实场景练习</text>
+        <text class="item-sub">把待复习的词放进站会 / 邮件场景里演一遍</text>
+      </view>
+      <text class="chev">›</text>
+    </view>
+
+    <view class="item" bindtap="openReader">
+      <view class="item-icon ic-blue">📖</view>
+      <view class="item-text">
+        <text class="item-title">场景阅读与点词收录</text>
+        <text class="item-sub">贴入英文文档或新闻，收词自动绑定原句</text>
+      </view>
+      <text class="chev">›</text>
+    </view>
+
+    <view class="item" bindtap="openCardMode">
+      <view class="item-icon ic-indigo">🎚</view>
+      <view class="item-text">
+        <text class="item-title">学习卡片模式</text>
+        <text class="item-sub">当前：{{cardModeLabel}}</text>
+      </view>
+      <text class="chev">›</text>
+    </view>
+
+    <!-- 每日目标。原型没画这一行，但它决定今日队列的配额，删了就没地方改了 -->
+    <view class="item" bindtap="openSettings">
+      <view class="item-icon ic-slate">⚙️</view>
+      <view class="item-text">
+        <text class="item-title">每日学习目标</text>
+        <text class="item-sub">当前：每日 {{dailyGoal}} 词</text>
+      </view>
+      <text class="chev">›</text>
+    </view>
+
+    <view class="item is-static">
+      <view class="item-text">
+        <text class="item-title">小程序外观主题</text>
+        <text class="item-sub">默认跟随系统，可锁浅色或深色</text>
+      </view>
+      <view class="seg">
+        <view class="seg-btn {{themeSetting === 'system' ? 'is-on' : ''}}" data-v="system" bindtap="setTheme">跟随</view>
+        <view class="seg-btn {{themeSetting === 'light' ? 'is-on' : ''}}" data-v="light" bindtap="setTheme">浅色</view>
+        <view class="seg-btn {{themeSetting === 'dark' ? 'is-on' : ''}}" data-v="dark" bindtap="setTheme">深色</view>
+      </view>
+    </view>
+
+    <view class="item is-static">
+      <view class="item-text">
+        <text class="item-title">不参与排行榜</text>
+        <text class="item-sub">开启后自己不上榜，也不看别人的榜</text>
+      </view>
+      <switch checked="{{hideFromLeaderboard}}" color="#9333ea" bindchange="toggleLeaderboard" />
+    </view>
+
+    <view class="item" wx:if="{{canBind}}" bindtap="startBind">
+      <view class="item-icon ic-slate">🔗</view>
+      <view class="item-text">
+        <text class="item-title">绑定词鲸账号</text>
+        <text class="item-sub">和 iOS、Chrome 扩展共用同一份生词库</text>
+      </view>
+      <text class="chev">›</text>
+    </view>
+
+    <view class="item" bindtap="openLicense">
+      <view class="item-icon ic-slate">📄</view>
+      <view class="item-text">
+        <text class="item-title">开源许可声明</text>
+        <text class="item-sub">NGSL / ECDICT · CC BY-SA 4.0 署名</text>
+      </view>
+      <text class="chev">›</text>
+    </view>
+
+    <view class="item" bindtap="openPrivacy">
+      <view class="item-icon ic-slate">🔒</view>
+      <view class="item-text">
+        <text class="item-title">隐私规范与数据保护</text>
+        <text class="item-sub">微信授权规范与本地数据隔离</text>
+      </view>
+      <text class="chev">›</text>
+    </view>
+
+    <view class="item" bindtap="openAbout">
+      <view class="item-icon ic-slate">ℹ️</view>
+      <view class="item-text">
+        <text class="item-title">关于活词</text>
+        <text class="item-sub">撞见 → 收进来 → 激活 · 场景生词记忆</text>
+      </view>
+      <text class="chev">›</text>
+    </view>
+
+    <view class="item is-danger" bindtap="logout">
+      <view class="item-icon ic-rose">⏻</view>
+      <view class="item-text">
+        <text class="item-title is-danger-text">退出登录</text>
+        <text class="item-sub">退出当前账号并回到登录页</text>
+      </view>
+      <text class="chev">›</text>
+    </view>
+
+  </view>
+
+  <!-- 纯文字，不可点。不放链接、不放二维码、不放按钮 -->
+  <view class="note">
+    <text class="note-line">词鲸 App（iOS）已上架 App Store</text>
+    <text class="note-line">词鲸网页端与 Chrome 扩展已上线</text>
+  </view>
+
+  <view class="tail"></view>
+</scroll-view>
+
+<!-- 学习卡片模式 -->
+<view class="mask" wx:if="{{cardModal}}" bindtap="closeCardMode" catchtouchmove="noop">
+  <view class="dialog" catchtap="noop">
+    <text class="dlg-title">选择学习卡片的呈现方式</text>
+    <view class="opt {{cardMode === 'context' ? 'is-on' : ''}}" data-v="context" bindtap="pickCardMode">
+      <text class="opt-title">语境优先模式（推荐）</text>
+      <text class="opt-sub">正面直接给英文原句并把生词挖空，靠上下文回忆。底座词没有原句，会自动退回传统模式。</text>
+    </view>
+    <view class="opt {{cardMode === 'classic' ? 'is-on' : ''}}" data-v="classic" bindtap="pickCardMode">
+      <text class="opt-title">传统模式</text>
+      <text class="opt-sub">正面给拼写与音标，背面给释义与原句，适合快速过筛。</text>
+    </view>
+  </view>
+</view>
+
+<!-- 绑定词鲸账号 -->
+<view class="mask" wx:if="{{binding}}" bindtap="closeBind" catchtouchmove="noop">
+  <view class="dialog" catchtap="noop">
+    <text class="dlg-title">用词鲸账号登录</text>
+    <text class="dlg-sub">小程序不提供邮箱注册。没有账号请继续用微信登录。</text>
+    <input class="field" type="text" value="{{bindEmail}}" bindinput="onBindEmail"
+           placeholder="词鲸注册邮箱" placeholder-class="ph" />
+    <input class="field" password value="{{bindPassword}}" bindinput="onBindPassword"
+           placeholder="密码" placeholder-class="ph" bindconfirm="confirmBind" />
+    <text class="dlg-err" wx:if="{{bindError}}">{{bindError}}</text>
+    <view class="dlg-actions">
+      <view class="btn-ghost" bindtap="closeBind">取消</view>
+      <button class="btn-ok" bindtap="confirmBind" loading="{{bindBusy}}">绑定</button>
+    </view>
   </view>
 </view>

@@ -41,7 +41,8 @@ export const EMPTY_SUMMARY: HomeSummary = {
   activated_this_week: 0,
 };
 
-type QueueRow = CijingWord & { activated_at: string | null; is_capture: boolean };
+/** hc_get_study_queue 与 hc_list_words 返回同一个形状 —— 两边共用 toCard() */
+export type QueueRow = CijingWord & { activated_at: string | null; is_capture: boolean };
 
 export interface Loaded<T> {
   data: T;
@@ -64,7 +65,7 @@ export async function fetchHomeSummary(): Promise<Loaded<HomeSummary>> {
   }
 }
 
-/** 来源展示文案。§6.3：来源比释义更需要被看见；底座词显示「首启添加」，不留空白。 */
+/** 来源展示文案。§5.4 S6：来源比释义更需要被看见；底座词显示「首启添加」，不留空白。 */
 function sourceLabel(w: CijingWord): string {
   const title = w.first_source_title || hostLabel(w.first_source_url);
   const when = relativeTime(w.created_at);
@@ -72,14 +73,14 @@ function sourceLabel(w: CijingWord): string {
   return when ? `${title} · ${when}` : title;
 }
 
-function toCard(row: QueueRow): StudyCard {
+export function toCard(row: QueueRow): StudyCard {
   return {
     wordId: row.id,
     term: row.term,
     phonetic: row.phonetic || '',
     pos: Array.isArray(row.parts) && row.parts.length > 0 ? String(row.parts[0]) : '',
     meaning: row.custom_meaning || row.primary_meaning,
-    // 底座词没有原句，正面只有拼写 + 音标，**不编造例句**（§6.2）
+    // 底座词没有原句，正面只有拼写 + 音标，**不编造例句**（§5.4 S5）
     contextSentence: row.first_context,
     contextSource: sourceLabel(row),
     exampleEn: row.example_en,
@@ -113,7 +114,7 @@ export interface SubmitResult {
 }
 
 /**
- * 提交一次自评。**先入队 → UI 立即响应 → 后台补发**（§6.2 结尾 + T1-c）。
+ * 提交一次自评。**先入队 → UI 立即响应 → 后台补发**（§5.4 S5 结尾 + T1-c）。
  * 返回的是本地乐观值，不等网络。
  */
 export function submitReview(card: StudyCard, rating: UiRating, durationMs: number): SubmitResult {
@@ -135,7 +136,7 @@ export function submitReview(card: StudyCard, rating: UiRating, durationMs: numb
 /**
  * 复刻服务端 apply_review 的 SM-2，**只为了让 UI 立刻能动**。
  * 服务端永远是权威：补发返回的 words 行会覆盖本地。
- * q=4 时 ease 恒 2.5，序列 1/3/8/20/50（《执行方案》§3.2 已验算）。
+ * q=4 时 ease 恒 2.5，序列 1/3/8/20/50（`design.md` §8.2 已验算）。
  */
 function optimistic(card: StudyCard, rating: UiRating): StudyCard {
   const q = toQuality(rating);

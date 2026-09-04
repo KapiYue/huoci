@@ -1,11 +1,20 @@
 {
   "pages": [
     "pages/login/login",
+    "pages/onboarding/onboarding",
     "pages/today/today",
     "pages/study/study",
     "pages/words/words",
     "pages/search/search",
-    "pages/profile/profile"
+    "pages/profile/profile",
+    "pages/settings/settings",
+    "pages/license/license",
+    "pages/vip/vip",
+    "pages/wordpacks/wordpacks",
+    "pages/packdetail/packdetail",
+    "pages/leaderboard/leaderboard",
+    "pages/aiscene/aiscene",
+    "pages/reader/reader"
   ],
   "window": {
     "navigationBarTitleText": "活词",
@@ -22,10 +31,26 @@
     "backgroundColor": "#ffffff",
     "borderStyle": "white",
     "list": [
-      { "pagePath": "pages/today/today", "text": "今日" },
-      { "pagePath": "pages/words/words", "text": "我的生词" },
-      { "pagePath": "pages/search/search", "text": "查词" },
-      { "pagePath": "pages/profile/profile", "text": "我的" }
+      {
+        "pagePath": "pages/today/today",
+        "text": "今日"
+      },
+      {
+        "pagePath": "pages/words/words",
+        "text": "我的生词"
+      },
+      {
+        "pagePath": "pages/wordpacks/wordpacks",
+        "text": "词包"
+      },
+      {
+        "pagePath": "pages/search/search",
+        "text": "查词"
+      },
+      {
+        "pagePath": "pages/profile/profile",
+        "text": "我的"
+      }
     ]
   },
   "darkmode": true,

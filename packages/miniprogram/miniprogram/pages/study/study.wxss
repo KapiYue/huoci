@@ -97,3 +97,17 @@
   background: rgba(245, 158, 11, 0.1); border: 2rpx solid rgba(245, 158, 11, 0.25);
 }
 .finish-btn { margin-top: auto; }
+
+/* —— 语境优先模式的正面（`[09-03]` 原型 ProfileTab 的「学习卡片模式」） —— */
+.cloze-label { font-size: 21rpx; font-weight: 800; color: var(--brand-text); letter-spacing: 2rpx; }
+.cloze {
+  margin-top: 20rpx; font-size: 34rpx; line-height: 1.9; font-weight: 600; color: var(--text-1);
+}
+
+/* —— R5 结束页的阅读器引导 —— */
+.reader-hint {
+  margin-top: 32rpx; padding: 26rpx 28rpx; border-radius: var(--r-md);
+  border: 2rpx dashed var(--border-strong); background: var(--surface-soft); text-align: left;
+}
+.reader-hint-title { display: block; font-size: 26rpx; font-weight: 800; color: var(--text-1); }
+.reader-hint-sub { display: block; margin-top: 8rpx; font-size: 21rpx; color: var(--text-3); line-height: 1.7; }

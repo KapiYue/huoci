@@ -1,6 +1,119 @@
-<view class="hc-page placeholder">
-  <view class="ph-card hc-card">
-    <text class="ph-title">我的生词</text>
-    <text class="ph-body">{{note}}</text>
+<!-- ③ 我的生词。还原对象：`docs/prototype/src/components/WordsTab.tsx`。
+     capture 词的卡片信息明显比底座词丰富 —— 这个差异是**刻意**的（§5.1）。 -->
+<view class="hc-page words {{themeClass}}">
+
+  <view class="head">
+    <text class="title">我的生词</text>
+    <text class="total hc-mono">已激活 {{activatedTotal}} / 全部 {{total}}</text>
+  </view>
+
+  <view class="searchbar">
+    <text class="searchbar-icon">🔍</text>
+    <input class="searchbar-input" value="{{query}}" bindinput="onSearch"
+           placeholder="在已加载的词里找" placeholder-class="ph" />
+    <text class="searchbar-clear" wx:if="{{query}}" bindtap="clearSearch">✕</text>
+  </view>
+
+  <view class="tabs">
+    <view
+      wx:for="{{filters}}"
+      wx:key="id"
+      class="tab {{filter === item.id ? 'is-on' : ''}}"
+      data-id="{{item.id}}"
+      bindtap="switchFilter"
+    >{{item.label}}</view>
+  </view>
+
+  <view class="offline" wx:if="{{stale}}">当前离线，展示的是上次的数据</view>
+
+  <!-- 空态：引导指向阅读器，**不是**「装插件」 -->
+  <block wx:if="{{ready && view.length === 0}}">
+    <view class="empty hc-card" wx:if="{{query}}">
+      <text class="empty-title">已加载的词里没有「{{query}}」</text>
+      <text class="empty-sub">往下翻加载更多，或者去「查词」直接搜这个词。</text>
+      <text class="empty-alt" bindtap="openSearch">去查词 →</text>
+    </view>
+    <view class="empty hc-card" wx:elif="{{filter === 'all' || filter === 'recent'}}">
+      <text class="empty-title">你的生词本还是空的</text>
+      <text class="empty-sub">贴一篇你自己在读的英文，点词就能连原句和来源一起收进来。</text>
+      <view class="empty-btn" bindtap="openReader">读一篇文章</view>
+      <text class="empty-alt" bindtap="openSearch">或者去查一个词 →</text>
+    </view>
+    <view class="empty hc-card" wx:elif="{{filter === 'due'}}">
+      <text class="empty-title">今天没有到期的词</text>
+      <text class="empty-sub">复习是按记忆曲线排的，没到期就是不用学。明天再来。</text>
+    </view>
+    <view class="empty hc-card" wx:else>
+      <text class="empty-title">还没有活词</text>
+      <text class="empty-sub">一个词要连着记住、间隔撑过 21 天才算激活。最快也要一个月，慢慢来。</text>
+    </view>
+  </block>
+
+  <view class="row hc-card {{item.isBase ? 'is-base' : ''}}" wx:for="{{view}}" wx:key="wordId"
+        data-id="{{item.wordId}}" bindtap="openDetail">
+    <view class="row-top">
+      <text class="term">{{item.term}}</text>
+      <text class="phonetic hc-mono" wx:if="{{item.phonetic}}">{{item.phonetic}}</text>
+      <view class="grow"></view>
+      <view class="hc-badge st-activated" wx:if="{{item.activated}}">✨ 活词</view>
+    </view>
+
+    <text class="meaning">{{item.meaning}}</text>
+
+    <!-- 原句只有 capture 词有。底座词**不补例句**（附录 C） -->
+    <text class="context" wx:if="{{item.contextSentence}}">{{item.contextSentence}}</text>
+
+    <!-- 来源行：字号可以小，但不能没有 -->
+    <text class="source">{{item.contextSource}}</text>
+  </view>
+
+  <view class="more" wx:if="{{view.length > 0}}">
+    <text wx:if="{{loading}}">加载中…</text>
+    <text wx:elif="{{hasMore}}">上拉加载更多</text>
+    <text wx:else>没有更多了</text>
+  </view>
+
+  <view class="tail"></view>
+</view>
+
+<!-- 词详情抽屉 -->
+<view class="mask" wx:if="{{detail}}" bindtap="closeDetail" catchtouchmove="noop">
+  <view class="drawer" catchtap="noop">
+    <view class="drawer-head">
+      <text class="drawer-term">{{detail.term}}</text>
+      <text class="drawer-phonetic hc-mono" wx:if="{{detail.phonetic}}">{{detail.phonetic}}</text>
+    </view>
+    <text class="drawer-meaning">{{detail.meaning}}</text>
+
+    <view class="drawer-ctx" wx:if="{{detail.contextSentence}}">
+      <text class="drawer-label">🧭 真实撞见原句与来源</text>
+      <text class="drawer-sentence">"{{detail.contextSentence}}"</text>
+      <text class="drawer-source">{{detail.contextSource}}</text>
+    </view>
+    <view class="drawer-ctx" wx:else>
+      <text class="drawer-label">🏷️ {{detail.contextSource}}</text>
+      <text class="drawer-sentence-plain">这个词来自系统底座词表，没有原句。去阅读器读一篇自己的文章，收到的词就会带上原句。</text>
+    </view>
+
+    <view class="drawer-stats">
+      <view class="ds">
+        <text class="ds-label">当前记忆状态</text>
+        <text class="ds-value">{{detail.statusLabel}}</text>
+      </view>
+      <view class="ds">
+        <text class="ds-label">成功复习次数</text>
+        <text class="ds-value hc-mono">{{detail.repetitions}}</text>
+      </view>
+      <view class="ds">
+        <text class="ds-label">当前间隔</text>
+        <text class="ds-value hc-mono">{{detail.interval}} 天</text>
+      </view>
+      <view class="ds">
+        <text class="ds-label">活词激活时间</text>
+        <text class="ds-value">{{detail.activatedDate}}</text>
+      </view>
+    </view>
+
+    <view class="drawer-close" bindtap="closeDetail">收起</view>
   </view>
 </view>
