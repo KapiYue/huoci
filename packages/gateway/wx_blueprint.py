@@ -1,6 +1,6 @@
 """活词小程序的 /wx/* 端点。挂进词鲸那个 Flask 进程。
 
-《执行方案》§14.1 T8 的分流约定：
+`design.md` §12.1 T8 的分流约定：
     /auth/v1  /rest/v1  → nginx 无状态透传（开 keepalive），**不进 Flask**
     /wx/*                → 本机 Flask（有状态：AppSecret、openid 映射、access_token 缓存）
 
@@ -143,7 +143,12 @@ def _find_identity(openid: str) -> dict[str, Any] | None:
     return rows[0]
 
 
-def _create_user(email: str, password: str, display_name: str, avatar_url: str | None) -> dict[str, Any]:
+def _create_user(email: str, password: str, display_name: str, avatar_url: str | None) -> None:
+    """建 auth user。**邮箱已存在不算失败** —— 见下面 wx_login 里的自愈说明。
+
+    合成邮箱是 openid 的纯函数，`email_exists` 只可能是「上一次建成了但后续步骤挂了」。
+    这时候要的是接着往下走（登录 + 补写映射），不是把用户永久挡在门外。
+    """
     # 坑 2：昵称必须进 user_metadata.display_name，否则 handle_new_user 的兜底会让昵称为空
     payload = {
         "email": email,
@@ -152,9 +157,11 @@ def _create_user(email: str, password: str, display_name: str, avatar_url: str |
         "user_metadata": {"display_name": display_name or "微信用户", "avatar_url": avatar_url},
     }
     status, data = _post_json(f"{_supabase()}/auth/v1/admin/users", payload, _service_headers())
-    if status not in (200, 201):
-        raise RuntimeError(f"建用户失败：{status} {data}")
-    return data
+    if status in (200, 201):
+        return
+    if status == 422 and isinstance(data, dict) and data.get("error_code") == "email_exists":
+        return
+    raise RuntimeError(f"建用户失败：{status} {data}")
 
 
 def _link_identity(openid: str, unionid: str | None, user_id: str, version: int = 1) -> None:
@@ -204,11 +211,15 @@ def wx_login():
     version = int(identity["secret_version"]) if identity else 1
     password = _derive_password(openid, version)
 
+    # 建号与写映射不是一个事务。原来的顺序（建号 → 立刻写映射）一旦在中间失败，
+    # 就留下一个没有映射行的 auth 账号：下次重来仍然查不到 identity，于是再建号，
+    # 撞 email_exists → 502，**这个 openid 被永久堵死，只能人工进后台删账号**。
+    # 现在改成：建号容忍已存在 → 先登录 → 用 token 里的 user.id 补写映射。
+    # 任何一步失败，下一次重试都能自愈。
     if identity is None:
         display_name = (body.get("nickname") or "").strip() or "微信用户"
         try:
-            user = _create_user(email, password, display_name, body.get("avatar_url"))
-            _link_identity(openid, unionid, user["id"], version)
+            _create_user(email, password, display_name, body.get("avatar_url"))
         except RuntimeError as exc:
             return jsonify({"message": str(exc)}), 502
 
@@ -217,6 +228,15 @@ def wx_login():
         # 密码对不上通常意味着 secret 轮转过但 secret_version 没升。
         # 这里不静默重试——静默重试会把「密钥配错」伪装成偶发失败。
         return jsonify({"message": "微信登录失败，请稍后重试", "detail": token}), 502
+
+    if identity is None:
+        user_id = str(((token or {}).get("user") or {}).get("id") or "")
+        if not user_id:
+            return jsonify({"message": "登录返回里没有 user.id", "detail": token}), 502
+        try:
+            _link_identity(openid, unionid, user_id, version)
+        except RuntimeError as exc:
+            return jsonify({"message": str(exc)}), 502
 
     # unionid 可能是这次才拿到的（用户刚关注了同主体的公众号），顺手补写
     if unionid and identity is not None and not identity.get("unionid"):
@@ -232,7 +252,7 @@ def wx_login():
 def wx_attach():
     """把 openid 挂到**当前已登录**的账号上（邮箱登录的老词鲸用户走这条）。
 
-    §6.0 的红字：msgSecCheck v2 必传 openid。邮箱登录的用户若没走过 wx.login，
+    §5.3 的红字：msgSecCheck v2 必传 openid。邮箱登录的用户若没走过 wx.login，
     网关手里没有 openid，一调 AI 内容就炸。**极易漏。**
     """
     auth_header = flask_request.headers.get("Authorization", "")
@@ -293,6 +313,59 @@ def _access_token() -> str:
     return str(data["access_token"])
 
 
+# ─────────────────────── 内容安全：返回体解释 ───────────────────────
+#
+# 微信在**业务失败时也返回 HTTP 200**，错误只体现在 body 的 errcode 上
+# （48001 未认证 / 40001 token 失效 / 45009 调用超额 / 61010 session 过期…）。
+# 所以「HTTP 200」不等于「检过了」，必须先读 errcode 再读 result。
+#
+# 🔴 绝对不要写成 `((data or {}).get("result") or {}).get("suggest", "pass")`：
+#    出错时 result 缺失 → 默认值兜成 "pass" → 整条审核链**静默降级成 no-op**，
+#    而且一条日志都不会打，直到线上出事才会发现。这是本文件最贵的一个坑。
+
+# 命中违规时微信不一定走 result.suggest，也可能直接用 errcode 表达（v1 的历史行为）。
+# 这个码必须映射成「违规」，映射成「检不了」就等于放行。
+SEC_CHECK_RISKY_ERRCODES = {87014}
+
+
+def sec_check_enabled() -> bool:
+    """内容安全总开关，默认**开**。
+
+    `HUOCI_WX_SECCHECK=off|0|false|no` 时跳过送检并留痕。
+    用途是微信侧故障 / 额度耗尽时的**应急旁路**，不是常态，更不是省额度的手段。
+    """
+    return os.getenv("HUOCI_WX_SECCHECK", "on").strip().lower() not in {"0", "off", "false", "no"}
+
+
+def interpret_sec_check(data: Any) -> bool | None:
+    """把 msg_sec_check 的返回体翻译成 True=通过 / False=违规 / None=没检成。
+
+    None 与 True 的区别是**故意**的：调用方可以选择放行，但必须自己写下这条日志，
+    不能让「没检成」伪装成「检过了」。
+    """
+    if not isinstance(data, dict):
+        print(f"[wx] msg_sec_check 返回体不是对象：{data!r}")
+        return None
+
+    errcode = data.get("errcode") or 0
+    if errcode in SEC_CHECK_RISKY_ERRCODES:
+        return False
+    if errcode:
+        print(f"[wx] msg_sec_check 调用失败 errcode={errcode} errmsg={data.get('errmsg')!r}")
+        return None
+
+    result = data.get("result")
+    if not isinstance(result, dict) or not result.get("suggest"):
+        # errcode=0 却没有 result，说明微信改了返回体或我们传错了 version。
+        # 这时放行是权衡后的选择，但必须吵出来。
+        print(f"[wx] msg_sec_check 返回体缺 result.suggest：{data!r}")
+        return None
+
+    # suggest ∈ {pass, review, risky}。review（疑似）**不放行** —— 这是查词场景，
+    # 宁可少给一条释义，不可放过一条违规内容。
+    return result["suggest"] == "pass"
+
+
 @wx_bp.post("/msgseccheck")
 def msg_sec_check():
     """文本内容安全检测。§14.4 第 5 条：在网关做，不在 Edge Function 做。
@@ -308,6 +381,12 @@ def msg_sec_check():
     if not content or not openid:
         return jsonify({"message": "缺少 content 或 openid"}), 400
 
+    # `checked` 是给调用方的诚实信号：pass=true 但 checked=false 意味着**放行了但没检**。
+    # 客户端可以不理它，但日志和排查必须能区分这两种 pass。
+    if not sec_check_enabled():
+        print(f"[wx] msg_sec_check 已被 HUOCI_WX_SECCHECK 关闭，未送检 len={len(content)}")
+        return jsonify({"pass": True, "suggest": "skipped", "checked": False})
+
     payload = {"content": content, "version": 2, "scene": scene, "openid": openid}
     try:
         token = _access_token()
@@ -322,5 +401,13 @@ def msg_sec_check():
     if status != 200:
         return jsonify({"message": "内容检测服务不可用"}), 502
 
-    suggest = ((data or {}).get("result") or {}).get("suggest", "pass")
-    return jsonify({"pass": suggest == "pass", "suggest": suggest, "raw": data})
+    verdict = interpret_sec_check(data)
+    if verdict is None:
+        # 检不了不等于要拦（拦了等于微信一抖动全站查词就废）。放行，但如实标注。
+        return jsonify({"pass": True, "suggest": "unknown", "checked": False, "raw": data})
+    return jsonify({
+        "pass": verdict,
+        "suggest": "pass" if verdict else "risky",
+        "checked": True,
+        "raw": data,
+    })
