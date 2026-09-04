@@ -1,7 +1,7 @@
 // 三端共享的领域类型。**字段名逐字对齐词鲸 Postgres schema**，不要自己起别名。
 //
 // ⚠️ 两处文档与实际 schema 不一致，以本文件（= 实际 schema）为准：
-//   1. 《执行方案》§3.1/§4.0 写的是 `words.interval`，实际列名是 **`interval_days`**
+//   1. `design.md` §8/§9.0 写的是 `words.interval`，实际列名是 **`interval_days`**
 //   2. §4.2 说「不在 words 上存 first_source」，实际 `words` 已有
 //      `first_context` / `first_source_url` / `first_source_title`，来源展示直接读它们，
 //      不必每次去 word_contexts 做 MIN 查询。word_contexts 仍是「全部上下文」的来源。
@@ -81,7 +81,7 @@ export interface DailyPlan {
   daily_review_goal: number;
 }
 
-/** hc_profiles 行（活词私有，《执行方案》§4.1） */
+/** hc_profiles 行（活词私有，`design.md` §9.1） */
 export interface HcProfile {
   user_id: string;
   level_line: number | null;

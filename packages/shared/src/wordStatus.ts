@@ -1,9 +1,9 @@
-// 词状态机。《执行方案》§3.1（2026-09-01 改写：输入源 FSRS → 词鲸 SM-2）。
+// 词状态机。`docs/design.md` §8（2026-09-01 改写：输入源 FSRS → 词鲸 SM-2）。
 //
 // Captured → Learning → Remembered → Activated → Mastered
 //
 // 全部是词鲸 `words` 行的**派生值**，不新增字段、不新增表，任何一端都能本地算。
-// 「活词」= activated，**不涉及口语**（对原定义的修正，见《执行方案》§3.3）。
+// 「活词」= activated，**不涉及口语**（对原定义的修正，见 `design.md` §8 与 §9.4）。
 
 /** 可调产品常量，不是科学结论。⚠️ 只能升不能降——降会让已激活的词回退。 */
 export const ACTIVATION_INTERVAL_DAYS = 21;
