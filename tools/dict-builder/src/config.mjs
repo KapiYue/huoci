@@ -32,8 +32,8 @@ export const EXAM_TAGS = [
   { tag: 'gk',    name: '高考',        pack: false },
 ];
 
-export const AUDIO_PREGEN_TOP = 20000; // Top N 预生成音频，之后走实时 TTS（《技术方案》§5.1）
-export const DAILY_GOAL = 20;          // 《技术方案》§3.3，用于「可完成天数」
+export const AUDIO_PREGEN_TOP = 20000; // Top N 预生成音频，之后走实时 TTS（`design.md` §13.1）
+export const DAILY_GOAL = 20;          // `design.md` §5.4 S4，用于「可完成天数」
 
 export const ATTRIBUTION = {
   license: 'CC BY-SA 4.0',

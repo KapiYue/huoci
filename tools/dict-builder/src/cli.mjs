@@ -6,6 +6,7 @@ import { loadLists } from './steps/02-load-lists.mjs';
 import { alignLemma } from './steps/03-align-lemma.mjs';
 import { buildPacks } from './steps/04-build-packs.mjs';
 import { report } from './steps/05-report.mjs';
+import { baseMeanings } from './steps/06-base-meanings.mjs';
 import { makeFixture } from './steps/demo-fixture.mjs';
 import { ensureDirSelf } from './lib/io.mjs';
 import { PATHS } from './config.mjs';
@@ -24,8 +25,12 @@ const HELP = `
   report     05 统计报告
   all        01 → 05 全跑
 
+  base-meanings  06 给底座词补音标+释义，产出 packs/base-full.json（服务端用，**不进 all**）
+                 灌库脚本见 packages/db/scripts/import-base-words.mjs
+
 产出：
   packs/base.json            主包，NGSL ∪ BSL，只存 拼写 + 频段 + 来源位
+  packs/base-full.json       服务端用，额外带音标与释义，**永不下发**（base-meanings 才产）
   packs/pro-*.json           分包 A：TSL / NAWL / Spoken
   packs/exam-*.json          分包 A：cet4 / cet6 / ky / ielts / toefl / gre
   reports/pack-stats.md      人看的统计报告（§7.1 八项）
@@ -53,6 +58,7 @@ try {
     case 'align':  await alignLemma(); break;
     case 'packs':  await buildPacks(); break;
     case 'report': await report(); break;
+    case 'base-meanings': await baseMeanings(); break;
     case 'all':    if (!doctor()) process.exit(1); await all(); break;
     default: console.log(HELP);
   }

@@ -4,7 +4,7 @@ import { inflectionsOf } from '../lib/exchange.mjs';
 import { writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
-// ⚠️ 这一步是整条管线的主要风险（《技术方案》§5.1）。
+// ⚠️ 这一步是整条管线的主要风险（`design.md` §13.1）。
 // NGSL 系列是 lemma 列表，ECDICT 是词形表。对不上的必须落盘供人工过目，不能静默丢弃。
 export async function alignLemma() {
   step('03 · 词元对齐（主要风险步骤）');
@@ -88,7 +88,7 @@ export async function alignLemma() {
     writeFileSync(f,
       `# ${l.name} · 词元对齐未匹配清单\n` +
       `# 共 ${miss.length} / ${(lists[l.id] || []).length} 条在 ECDICT 中找不到\n` +
-      `# ⚠️ 必须人工过目后才能进 P2（《执行方案》§9 W1 周六）\n` +
+      '# ⚠️ 必须人工过目后才能进 P2（design.md §13.1 · §21.1「词元对齐失败被静默吞掉」）\n' +
       `# 常见原因：连字符写法差异、英式/美式拼写、专有名词、ECDICT 收词缺口\n\n` +
       miss.join('\n') + '\n');
     const rate = pct(miss.length, (lists[l.id] || []).length || 1);

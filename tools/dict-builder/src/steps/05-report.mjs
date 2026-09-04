@@ -46,7 +46,7 @@ export async function report() {
   push(`| 可回溯原型（exchange 含 \`0:\`） | ${fmt(ingest.withExchange0)} |`);
   push('');
   push('> ⚠️ **ECDICT 只有一个 `phonetic` 字段，没有 uk/us 之分。**');
-  push('> 《技术方案》§2.1 的 `phonetic_uk` / `phonetic_us` 需要另找来源，或在 TTS 批处理时一并产出。');
+  push('> `design.md` §9 的 `phonetic_uk` / `phonetic_us` 需要另找来源，或在 TTS 批处理时一并产出（见 §22.2 ④）。');
   push('> 这是一个已知的数据缺口，P2 的卡片先只显示单一音标。');
   push('');
 
@@ -63,7 +63,7 @@ export async function report() {
     J.exam[e.tag] = { ...v, words: undefined, days };
   }
   push('');
-  push(`> **可完成天数** = 净增 ÷ ${DAILY_GOAL}（《技术方案》§3.3 每日目标）。`);
+  push(`> **可完成天数** = 净增 ÷ ${DAILY_GOAL}（\`design.md\` §5.4 S4 每日目标）。`);
   push('> ⚠️ 超过 200 天的包，UI 上直接显示会吓退用户，不显示是欺骗 —— **需要专门定文案口径**。');
   push('');
 
@@ -147,9 +147,9 @@ export async function report() {
     push(`| ${l.name} | ${fmt(total)} | ${fmt(miss)} | ${pct(miss, total)} | \`reports/unmatched/${l.id}.txt\` |`);
   }
   push('');
-  push('> ⚠️ **必须人工过目，不允许静默丢弃**（《技术方案》§11 风险表）。');
+  push('> ⚠️ **必须人工过目，不允许静默丢弃**（`design.md` §21.1 风险清单）。');
   push('> 按表分开报，合并报会把 GRE 的高失败率掩盖在 CET4 的低失败率里。');
-  push('> **《执行方案》§9 W1 周六的任务：过完这份清单才能进 W2。**');
+  push('> **人工过完这份清单才算 P1 收尾**（`design.md` §21.1「词元对齐失败被静默吞掉」）。');
   push('');
 
   // ---- 结论 ----

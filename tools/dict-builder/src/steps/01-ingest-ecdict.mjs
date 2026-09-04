@@ -66,7 +66,7 @@ export async function ingestEcdict() {
   log(`带音标 ${pct(stats.withPhonetic, stats.rows)} · 带中文释义 ${pct(stats.withTranslation, stats.rows)}`);
   log(`带 frq ${pct(stats.withFrq, stats.rows)} · 带 bnc ${pct(stats.withBnc, stats.rows)}`);
   log(`可回溯原型（exchange 含 0:）${fmt(stats.withExchange0)} · 带应试 tag ${fmt(stats.tagged)}`);
-  warn('ECDICT 只有一个 phonetic 字段，没有 uk/us 之分 —— 《技术方案》§2.1 的 phonetic_uk/phonetic_us 需要另找来源或由 TTS 侧补。已记入报告。');
+  warn('ECDICT 只有一个 phonetic 字段，没有 uk/us 之分 —— `design.md` §9（音标来源见 §22.2 ④） 的 phonetic_uk/phonetic_us 需要另找来源或由 TTS 侧补。已记入报告。');
 
   writeJson(P('out/ingest-stats.json'), stats);
   ok('out/word-lite.ndjson · out/lemma-map.ndjson · out/tagged.ndjson');
