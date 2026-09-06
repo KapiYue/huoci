@@ -11,6 +11,7 @@
 //   ③ wxml 里 {{变量}} 在不在 data（或 wx:for 的 item / 组件 properties）
 //   ④ wxml 标签闭合
 //   ⑤ app.json 里的页面四件套齐不齐、tabBar 项在不在 pages 里、组件注册了没
+//   ⑥ 红线词（剥掉注释之后再查，否则满屏都是「不要加 X」的注释命中）
 
 import fs from 'node:fs';
 import path from 'node:path';
@@ -162,6 +163,45 @@ for (const f of files.filter((f) => f.endsWith('.ts'))) {
   for (const m of src.matchAll(/url:\s*[`'"]\/(pages\/[a-zA-Z0-9_/-]+)/g)) {
     if (!fs.existsSync(path.join(ROOT, `${m[1]}.ts`))) add(rel(f), `跳转到 /${m[1]}，但这个页面不存在`);
   }
+}
+
+// ⑥ 红线词。`design.md` §5.0 第 2/3 条 + §5.5：界面上不许出现这些字样。
+//    ⚠️ **必须剥注释再查** —— 仓库里到处写着「不要加 X」，直接 grep 全是注释命中，
+//    噪音大到没人看，等于没有这道检查。
+const REDLINES = [
+  ['加油', '课堂语气'],
+  ['棒棒', '课堂语气'],
+  ['打卡成功', '课堂语气'],
+  ['等级', '不做等级/星级/段位'],
+  ['星级', '不做等级/星级/段位'],
+  ['段位', '不做等级/星级/段位'],
+  ['英语水平测试', 'S2 不许有测评感'],
+  ['数据同步', '伪命题，要做的是「绑定」'],
+  ['立即开通', '不是工具口吻'],
+  ['解锁全部功能', '不是工具口吻'],
+];
+/** 允许出现在正文里的例外：这两行是规格要求的纯文字 */
+const REDLINE_ALLOW = [/词鲸 App（iOS）已上架 App Store/, /词鲸网页端与 Chrome 扩展已上线/];
+
+/** 把 wxml 注释、ts 的 // 与 块注释 全部剥掉，只留真正会渲染/执行的部分 */
+function stripComments(src, ext) {
+  let out = src.replace(/<!--[\s\S]*?-->/g, '');
+  if (ext === '.ts') {
+    out = out.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
+  }
+  return out;
+}
+
+for (const f of files.filter((f) => /\.(wxml|ts)$/.test(f))) {
+  if (f.includes('/scripts/')) continue;
+  const ext = path.extname(f);
+  const body = stripComments(fs.readFileSync(f, 'utf8'), ext);
+  body.split('\n').forEach((line, i) => {
+    if (REDLINE_ALLOW.some((re) => re.test(line))) return;
+    for (const [word, why] of REDLINES) {
+      if (line.includes(word)) add(rel(f), `第 ${i + 1} 行出现红线词「${word}」（${why}）`);
+    }
+  });
 }
 
 if (problems.length === 0) {
