@@ -134,14 +134,14 @@
   <view class="tail"></view>
 </scroll-view>
 
-<!-- React 原型 S0：微信头像/昵称授权层。拒绝留在 S0，允许后才调用真实 wx.login。 -->
+<!-- 用户自行设置活词内资料；不读取微信头像。确认后才调用真实 wx.login。 -->
 <view class="auth-mask" wx:if="{{showWeChatAuthSheet}}">
   <view class="auth-sheet hc-card">
     <view class="auth-head">
       <view class="auth-app-mark">活</view>
       <view class="auth-head-copy">
         <text class="auth-title">活词 申请</text>
-        <text class="auth-sub">获取您的微信昵称与头像</text>
+        <text class="auth-sub">设置活词内展示资料，不读取微信头像</text>
       </view>
     </view>
 
@@ -176,19 +176,15 @@
         <text class="legal-section">1. 服务说明</text>
         <text class="legal-copy">活词提供生词收录、记忆复习、场景阅读与学习进度同步服务。</text>
         <text class="legal-section">2. 账号与数据</text>
-        <text class="legal-copy">请妥善保管账号信息。小程序只保存你主动收下的词、收词时的原文与来源标题。</text>
+        <text class="legal-copy">请妥善保管账号信息。小程序会按照个人信息保护政策处理账号与学习数据。</text>
         <text class="legal-section">3. 使用规范</text>
         <text class="legal-copy">请勿利用本服务发布违法内容或侵害他人权益。</text>
       </block>
       <block wx:else>
-        <text class="legal-section">1. 我们收集的信息</text>
-        <text class="legal-copy">仅在你授权后收集头像、昵称和必要的学习记录，用于账号展示与跨端同步。</text>
-        <text class="legal-section">2. 微信小程序授权合规</text>
-        <text class="legal-copy">授权前会明确说明用途；拒绝授权不会影响查看协议与隐私说明。</text>
-        <text class="legal-section">3. 数据存储与安全</text>
-        <text class="legal-copy">我们不读取剪贴板或通讯录。贴进阅读器的正文只留在本机，不会上传。</text>
-        <text class="legal-section">4. 用户的权利</text>
-        <text class="legal-copy">你可以查询、更正或删除账号资料，并可随时退出登录。</text>
+        <block wx:for="{{privacySections}}" wx:key="title">
+          <text class="legal-section">{{item.title}}</text>
+          <text class="legal-copy">{{item.body}}</text>
+        </block>
       </block>
     </scroll-view>
     <button class="legal-close" bindtap="closeLegal">已了解并关闭</button>

@@ -185,6 +185,20 @@
   </view>
 </view>
 
+<!-- 与登录页共用 services/privacy.ts 的同一份个人信息保护政策。 -->
+<view class="mask" wx:if="{{privacyModal}}" bindtap="closePrivacy" catchtouchmove="noop">
+  <view class="dialog privacy-dialog" catchtap="noop">
+    <text class="dlg-title">个人信息保护政策</text>
+    <scroll-view class="privacy-body" scroll-y>
+      <view class="privacy-section" wx:for="{{privacySections}}" wx:key="title">
+        <text class="privacy-title">{{item.title}}</text>
+        <text class="privacy-copy">{{item.body}}</text>
+      </view>
+    </scroll-view>
+    <button class="privacy-close" bindtap="closePrivacy">已了解并关闭</button>
+  </view>
+</view>
+
 <!-- 绑定词鲸账号 -->
 <view class="mask" wx:if="{{binding}}" bindtap="closeBind" catchtouchmove="noop">
   <view class="dialog" catchtap="noop">

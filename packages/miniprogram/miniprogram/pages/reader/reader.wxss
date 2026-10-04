@@ -27,9 +27,9 @@
 .field {
   height: 76rpx; padding: 0; border: 0; background: transparent; font-size: 25rpx; color: var(--text-1);
 }
-.quick-actions { display: flex; gap: 16rpx; margin-top: 22rpx; }
+.quick-actions { display: flex; align-items: center; justify-content: space-between; gap: 16rpx; margin-top: 22rpx; }
 .quick-btn { padding: 13rpx 22rpx; border-radius: var(--r-full); border: 2rpx solid var(--border-strong); background: var(--surface); color: var(--text-2); font-size: 22rpx; font-weight: 800; box-shadow: var(--shadow-xs); }
-.quick-paste { color: var(--brand-text); }
+.paste-hint { flex: 1; color: var(--text-3); font-size: 20rpx; line-height: 1.5; }
 .why-card { margin-top: 24rpx; padding: 22rpx 24rpx; border-radius: var(--r-lg); border: 2rpx solid var(--border); background: rgba(250,245,255,.86); }
 .why-title { display: block; color: var(--brand-text); font-size: 22rpx; font-weight: 900; }
 .why-copy { display: block; margin-top: 8rpx; color: var(--text-3); font-size: 20rpx; line-height: 1.7; }

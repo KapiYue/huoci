@@ -16,6 +16,7 @@ import * as words from '../../services/words';
 import * as membership from '../../services/membership';
 import * as prefs from '../../services/prefs';
 import * as theme from '../../services/theme';
+import { PRIVACY_SECTIONS } from '../../services/privacy';
 import { EV } from '../../shared/events';
 import { ApiError } from '../../services/types';
 import type { StudyCardMode } from '../../services/prefs';
@@ -47,6 +48,8 @@ Page({
     cardModeLabel: CARD_MODE_LABEL.context,
     hideFromLeaderboard: false,
     cardModal: false,
+    privacyModal: false,
+    privacySections: PRIVACY_SECTIONS,
     /** 绑定弹层 */
     binding: false,
     bindEmail: '',
@@ -116,14 +119,10 @@ Page({
   },
 
   openPrivacy() {
-    wx.showModal({
-      title: '隐私规范与数据保护',
-      content:
-        '我们只保存你主动收下的词、收词时的那句原文与来源标题。贴进阅读器的正文只留在你手机上，不会上传。不读剪贴板、不收集通讯录、不做广告投放。',
-      showCancel: false,
-      confirmText: '知道了',
-    });
+    this.setData({ privacyModal: true });
   },
+
+  closePrivacy() { this.setData({ privacyModal: false }); },
 
   // ---------------- 偏好 ----------------
 

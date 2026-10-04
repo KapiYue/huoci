@@ -98,16 +98,6 @@ Page({
     this.setData({ title: e.detail.value });
   },
 
-  pasteClipboard() {
-    wx.getClipboardData({
-      success: (res) => {
-        const text = String(res.data || '');
-        this.setData({ text, overflow: text.length > reader.MAX_CHARS });
-      },
-      fail: () => wx.showToast({ title: '没有读取到剪贴板内容', icon: 'none' }),
-    });
-  },
-
   fillExample() {
     const text = 'We design products by observing how people actually work. A useful prototype makes assumptions visible, helps teams align quickly, and reduces the risk of building the wrong solution.';
     this.setData({ text, title: '产品设计工作笔记', overflow: false });

@@ -39,7 +39,7 @@
     </view>
 
     <view class="quick-actions">
-      <view class="quick-btn quick-paste" bindtap="pasteClipboard">▣ 粘贴剪贴板</view>
+      <text class="paste-hint">长按上方输入框，使用系统菜单粘贴</text>
       <view class="quick-btn" bindtap="fillExample">✣ 填入示例文章</view>
     </view>
 

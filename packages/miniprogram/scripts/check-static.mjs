@@ -67,6 +67,15 @@ for (const w of files.filter((f) => f.endsWith('.wxml'))) {
   }
   const ts = fs.readFileSync(tsPath, 'utf8');
 
+  // 微信编译器不接受同一节点同时承担条件分支和列表循环。
+  // 开发者工具会报 `wx:if not found`，但普通 XML/WXML 文本检查很容易漏掉。
+  for (const m of noComment.matchAll(/<([a-zA-Z][\w-]*)\b([^>]*)>/g)) {
+    const attrs = m[2];
+    if (/\bwx:(?:else|elif)\b/.test(attrs) && /\bwx:for\b/.test(attrs)) {
+      add(rel(w), `<${m[1]}> 不能同时使用 wx:else/wx:elif 与 wx:for，请拆成嵌套 block`);
+    }
+  }
+
   // ② 事件处理函数
   for (const m of noComment.matchAll(/\b(?:bind|catch):?[a-zA-Z]+\s*=\s*"([^"{}]+)"/g)) {
     const h = m[1].trim();
