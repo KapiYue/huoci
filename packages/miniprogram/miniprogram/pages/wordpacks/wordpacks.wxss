@@ -3,6 +3,8 @@
 .head { display: flex; align-items: baseline; justify-content: space-between; padding: 0 4rpx; }
 .head-title { font-size: 44rpx; font-weight: 800; color: var(--text-1); }
 .head-count { font-size: 22rpx; font-weight: 700; color: var(--text-3); }
+.head-actions { display: flex; align-items: center; gap: 18rpx; }
+.receive-link { font-size: 21rpx; font-weight: 900; color: var(--brand-text); }
 
 .sec { display: block; margin: 32rpx 4rpx 16rpx; }
 .sec-head {
@@ -22,12 +24,18 @@
   background: var(--surface-sunk); overflow: hidden;
 }
 .bar-fill { height: 100%; border-radius: var(--r-full); background: linear-gradient(90deg, var(--ok-500), var(--ok-600)); }
+.pack-progress-row { display: flex; align-items: center; justify-content: space-between; }
+.pack-percent { font-size: 20rpx; font-weight: 800; color: var(--text-3); }
 .pack-sub { display: block; font-size: 20rpx; color: var(--text-3); line-height: 1.6; }
 
 /* —— 推荐 / 考试 / 自建 —— */
+.pack-group { margin-top: 30rpx; padding: 28rpx; border-radius: var(--r-lg); }
+.sec-head.in-card { margin: 0 0 18rpx; }
+.brand-note { color: var(--brand-text); font-weight: 800; }
 .rec {
   display: flex; align-items: center; justify-content: space-between; gap: 20rpx;
-  padding: 26rpx; margin-bottom: 16rpx; border-radius: var(--r-md);
+  padding: 20rpx; margin-bottom: 14rpx; border-radius: var(--r-md);
+  background: rgba(250,245,255,.72); border: 2rpx solid var(--border);
 }
 .rec-left { flex: 1; min-width: 0; }
 .add-btn {
@@ -35,6 +43,12 @@
   background: var(--brand-600); color: #fff; font-size: 22rpx; font-weight: 800;
 }
 .add-btn.is-on { background: var(--surface-sunk); color: var(--text-3); border: 2rpx solid var(--border-strong); }
+.one-line { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.exam-grid { display: flex; gap: 14rpx; }
+.exam-item { flex: 1; min-width: 0; padding: 24rpx 18rpx; border: 2rpx solid #e2e8f0; border-radius: var(--r-md); }
+.exam-item .pack-title { display: block; min-height: 68rpx; line-height: 1.35; }
+.share-circle { width: 52rpx; height: 52rpx; flex: none; display: flex; align-items: center; justify-content: center; border-radius: 50%; border: 2rpx solid var(--border-strong); color: var(--brand-text); font-size: 30rpx; }
+.share-circle image { width: 28rpx; height: 28rpx; }
 
 .empty { padding: 40rpx 32rpx; border-radius: var(--r-md); text-align: center; }
 .empty-title { display: block; font-size: 26rpx; font-weight: 800; color: var(--text-2); }
@@ -50,6 +64,19 @@
   width: 100%; padding: 36rpx 32rpx; border-radius: var(--r-lg);
   background: var(--surface); border: 2rpx solid var(--border);
 }
+.dlg-head { display: flex; align-items: center; justify-content: space-between; }
+.dlg-close { padding: 0 6rpx; color: var(--text-4); font-size: 36rpx; line-height: 1; }
+.share-preview-card { margin-top: 26rpx; padding: 28rpx 24rpx; border-radius: var(--r-md); background: #faf5ff; border: 2rpx solid var(--border-strong); text-align: center; }
+.share-preview-label { display: block; color: var(--text-3); font-size: 21rpx; }
+.share-preview-title { display: block; margin-top: 5rpx; color: var(--brand-text); font-size: 30rpx; font-weight: 900; }
+.share-preview-count { display: block; margin-top: 3rpx; color: var(--text-2); font-size: 21rpx; }
+.share-copy { display: block; margin: 28rpx 0; color: var(--text-3); font-size: 22rpx; line-height: 1.7; }
+.wechat-share,.receive-btn { width: 100%; height: 82rpx; border-radius: var(--r-md); display: flex; align-items: center; justify-content: center; background: var(--ok-600); color: #fff; font-size: 24rpx; font-weight: 900; }
+.receive-card { margin-top: 26rpx; padding: 26rpx; border-radius: var(--r-md); background: #fffbeb; border: 2rpx solid #fde68a; }
+.receive-from { display: block; color: #92400e; font-size: 21rpx; font-weight: 800; }
+.receive-title { display: block; margin-top: 9rpx; color: var(--text-1); font-size: 27rpx; font-weight: 900; }
+.receive-preview { display: block; margin-top: 7rpx; color: var(--text-3); font-size: 20rpx; }
+.receive-btn { margin-top: 26rpx; background: var(--brand-600); }
 .dlg-title { display: block; font-size: 30rpx; font-weight: 800; color: var(--text-1); }
 .field {
   margin-top: 24rpx; height: 88rpx; padding: 0 24rpx;

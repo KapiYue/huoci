@@ -4,24 +4,56 @@
 
   <!-- R1 · 贴入文章 -->
   <block wx:if="{{stage === 'paste'}}">
-    <textarea class="paste" value="{{text}}" bindinput="onText" maxlength="-1"
-              placeholder="把你正在读的英文粘进来 —— 技术文档、邮件、新闻都行。点词就能连原句一起收下。"
-              placeholder-class="ph" />
-    <view class="counter {{overflow ? 'is-warn' : ''}}">
-      {{text.length}} / {{max}} 字符{{overflow ? '：超出的部分会被截断，不会悄悄丢' : ''}}
+    <view class="reader-head">
+      <view class="reader-icon">▣</view>
+      <view class="reader-copy">
+        <view class="reader-title-row">
+          <text class="reader-title">贴文章 · 点词收录</text>
+          <text class="reader-tag">语境收录</text>
+        </view>
+        <text class="reader-sub">粘贴你想读的英文文本，点词自动收录并绑定原句</text>
+      </view>
     </view>
 
-    <input class="field" value="{{title}}" bindinput="onTitle"
-           placeholder="来源（选填）例：Stripe Docs / 一封工作邮件" placeholder-class="ph" />
+    <view class="form-label-row">
+      <text class="form-label">文章或出处标题（选填）</text>
+      <text class="form-note">用于记录生词出处</text>
+    </view>
+    <view class="field-wrap">
+      <text class="field-icon">▧</text>
+      <input class="field" value="{{title}}" bindinput="onTitle"
+             placeholder="如：Stripe Docs / TechCrunch / 工作邮件" placeholder-class="ph" />
+    </view>
 
-    <button class="hc-primary-btn" bindtap="start" disabled="{{text.length === 0}}">开始阅读</button>
+    <view class="form-label-row text-label-row">
+      <text class="form-label">英文文章正文</text>
+      <text class="input-state {{text.length ? 'has-text' : ''}}">{{text.length ? '已输入' : '等待输入'}}</text>
+    </view>
+    <view class="paste-wrap">
+      <textarea class="paste" value="{{text}}" bindinput="onText" maxlength="-1"
+                placeholder="请在此粘贴你想阅读的英文文章、技术文档、论文摘要或日常工作邮件…\n\n粘贴后点击下方「开始点词收录」，系统将智能分词，点击任意生词即可查看精准释义并永久收录语境原句！"
+                placeholder-class="ph" />
+      <view class="counter {{overflow ? 'is-warn' : ''}}">
+        {{text.length}} / {{max}} 字符{{overflow ? ' · 超出部分将在开始时截断' : ''}}
+      </view>
+    </view>
+
+    <view class="quick-actions">
+      <view class="quick-btn quick-paste" bindtap="pasteClipboard">▣ 粘贴剪贴板</view>
+      <view class="quick-btn" bindtap="fillExample">✣ 填入示例文章</view>
+    </view>
+
+    <view class="why-card">
+      <text class="why-title">ⓘ 为什么「贴文章收录」最有效？</text>
+      <text class="why-copy">背单词的核心是「语境联系」。在自己真实阅读的原句中捕获生词，系统自动绑定句子出处，记忆留存率提升 3 倍以上。</text>
+    </view>
 
     <view class="last" wx:if="{{last}}" bindtap="resumeLast">
       上次读的：{{last.title}}（{{last.ago}} · 收了 {{last.capturedCount}} 个词）
     </view>
 
-    <view class="tip">
-      粘进来的正文只留在你手机上，不会上传。云端只保存你收下的那个词和它所在的那一句。
+    <view class="reader-bottom">
+      <button class="hc-primary-btn start-btn {{text.length === 0 ? 'is-disabled' : ''}}" bindtap="start" disabled="{{text.length === 0}}">开始点词收录　→</button>
     </view>
   </block>
 

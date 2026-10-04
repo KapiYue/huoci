@@ -1,6 +1,11 @@
 <!-- W2 词包详情 / W3 接收分享。还原对象：`WordPacksTab.tsx` 的详情视图与接收弹层。
      词状态只显示三档（已激活 / 学习中 / 未学），**不为中间态画徽章**。 -->
-<scroll-view class="hc-page {{themeClass}}" scroll-y>
+<scroll-view class="hc-page detail-page {{themeClass}}" scroll-y>
+
+  <view class="detail-nav" wx:if="{{!isShare}}">
+    <view class="back-link" bindtap="goBack">‹ <text>返回词包列表</text></view>
+    <view class="top-share" bindtap="openShare"><image src="/assets/ui/icon-share.svg" mode="aspectFit" /><text>分享</text></view>
+  </view>
 
   <!-- W3 · 别人分享过来的 -->
   <block wx:if="{{isShare}}">
@@ -16,32 +21,50 @@
 
   <!-- W2 · 词包详情 -->
   <block wx:else>
-    <view class="head">
+    <view class="summary-card hc-card">
       <text class="head-title">{{pack.title}}</text>
       <text class="head-desc">{{pack.description}}</text>
-    </view>
-
-    <view class="counts hc-card">
-      <text class="counts-line">{{pack.totalWords}} 词 · 你已激活 {{pack.activatedWords}} · 未学 {{pack.unlearnedWords}}</text>
+      <view class="counts-line">
+        <text>{{pack.totalWords}} 词</text><text>·</text>
+        <text class="activated-count">你已激活 {{pack.activatedWords}}</text><text>·</text>
+        <text class="unlearned-count">未学 {{pack.unlearnedWords}}</text>
+      </view>
       <button class="hc-primary-btn" wx:if="{{!joined}}" bindtap="join">加入学习</button>
       <view class="joined-row" wx:else>
-        <view class="ghost-btn" bindtap="startStudy">立即学这个包</view>
-        <view class="ghost-btn is-danger" bindtap="remove">移除词包</view>
+        <view class="study-pack-btn" bindtap="startStudy"><image src="/assets/ui/icon-book-white.svg" mode="aspectFit" /><text>立即学这个包</text></view>
+        <view class="remove-btn" bindtap="remove">移出</view>
       </view>
     </view>
 
-    <view class="hc-section-title sec">词表</view>
-    <view class="word hc-card" wx:for="{{pack.words}}" wx:key="spelling">
-      <view class="word-left">
-        <text class="word-term">{{item.spelling}}</text>
-        <text class="word-meaning">{{item.meaning}}</text>
+    <view class="words-card hc-card">
+      <view class="words-title">包含词表（{{pack.words.length}}）</view>
+      <view class="word" wx:for="{{pack.words}}" wx:key="spelling">
+        <view class="word-left">
+          <text class="word-term">{{item.spelling}}</text>
+          <text class="word-meaning">{{item.meaning}}</text>
+        </view>
+        <view class="status-badge status-{{item.badgeClass}}">{{item.statusLabel}}</view>
       </view>
-      <view class="hc-badge st-{{item.badgeClass}}">{{item.statusLabel}}</view>
     </view>
-    <view class="word-note">这里只列了预览词。整包的词会按你的进度，一天一点进今日队列。</view>
 
-    <button class="share-btn" open-type="share">分享给朋友</button>
+    <button class="share-btn" bindtap="openShare"><image src="/assets/ui/icon-share.svg" mode="aspectFit" /><text>分享给朋友</text></button>
   </block>
 
   <view class="tail"></view>
 </scroll-view>
+
+<view class="mask" wx:if="{{shareVisible}}" bindtap="closeShare" catchtouchmove="noop">
+  <view class="share-dialog" catchtap="noop">
+    <view class="share-head">
+      <text class="share-dialog-title">分享词包</text>
+      <text class="share-x" bindtap="closeShare">×</text>
+    </view>
+    <view class="share-preview-card">
+      <text class="share-preview-label">词包分享预览卡片</text>
+      <text class="share-preview-title">{{pack.title}}</text>
+      <text class="share-preview-count">共 {{pack.totalWords}} 个精选生词</text>
+    </view>
+    <text class="share-dialog-note">朋友点击后将 fork 一份到其账号并开始学习，不会影响你原词包的数据。</text>
+    <button class="wechat-share" open-type="share">发送给微信好友</button>
+  </view>
+</view>

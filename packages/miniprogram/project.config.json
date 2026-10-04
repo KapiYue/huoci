@@ -4,7 +4,7 @@
   "compileType": "miniprogram",
   "appid": "wxc9e0eb658d8def26",
   "projectname": "huoci",
-  "libVersion": "3.5.0",
+  "libVersion": "3.6.0",
   "setting": {
     "urlCheck": false,
     "es6": true,

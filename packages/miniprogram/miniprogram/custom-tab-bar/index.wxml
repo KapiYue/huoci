@@ -1,7 +1,10 @@
 <view class="tabbar">
   <view class="tab {{active === index ? 'is-on' : ''}}"
         wx:for="{{items}}" wx:key="path" data-index="{{index}}" bindtap="go">
-    <text class="tab-icon">{{active === index ? item.iconOn : item.icon}}</text>
+    <view class="tab-icon-wrap {{active === index ? 'is-on' : ''}}">
+      <image class="tab-icon" src="{{active === index ? item.iconOn : item.icon}}" mode="aspectFit" />
+      <view class="tab-glow" wx:if="{{active === index}}"></view>
+    </view>
     <text class="tab-text">{{item.text}}</text>
   </view>
 </view>

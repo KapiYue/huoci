@@ -1,187 +1,66 @@
-/* 首启三屏。配色一律走 tokens.wxss，不写死颜色。 */
+.ob { position: relative; display: flex; flex-direction: column; width: 100%; height: 100vh; min-height: 0; padding: calc(env(safe-area-inset-top) + 162rpx) 40rpx calc(env(safe-area-inset-bottom) + 108rpx) !important; overflow: hidden; }
+.dream { position: absolute; border-radius: 999rpx; pointer-events: none; filter: blur(2rpx); }
+.dream-a { width: 260rpx; height: 260rpx; right: -130rpx; top: 60rpx; background: rgba(216, 180, 254, .17); }
+.dream-b { width: 220rpx; height: 220rpx; left: -130rpx; bottom: 180rpx; background: rgba(165, 180, 252, .14); }
 
-.ob {
-  display: flex;
-  flex-direction: column;
-  padding-top: 32rpx;
-}
+.screen-body { position: relative; z-index: 1; width: 100%; padding-top: 16rpx; }
+.word-screen { display: flex; flex-direction: column; min-height: 0; }
+.step-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10rpx; color: var(--brand-500); font-size: 22rpx; font-weight: 700; }
+.selected-count { display: block; color: var(--ok-500); }
+.title { display: block; color: var(--text-1); font-size: 44rpx; line-height: 1.25; font-weight: 800; }
+.sub { display: block; margin-top: 8rpx; color: var(--text-3); font-size: 22rpx; line-height: 1.5; }
 
-/* ---------- 进度点 ---------- */
-.dots {
-  display: flex;
-  justify-content: center;
-  gap: 12rpx;
-  margin-bottom: 48rpx;
-}
-.dot {
-  width: 48rpx;
-  height: 8rpx;
-  border-radius: var(--r-full);
-  background: var(--border-strong);
-  transition: background 0.2s;
-}
-.dot.is-on { background: var(--brand-600); }
+.scene-grid { display: flex; flex-wrap: wrap; gap: 20rpx; margin-top: 40rpx; }
+.scene { position: relative; width: calc((100% - 20rpx) / 2); height: 192rpx; padding: 28rpx; border: 2rpx solid rgba(243, 232, 255, .95); border-radius: 32rpx; background: rgba(255, 255, 255, .9); box-shadow: 0 2rpx 6rpx rgba(76, 29, 149, .08); transition: transform .16s, border-color .16s, background .16s; }
+.scene.is-on { border-color: #c084fc; background: rgba(243, 232, 255, .92); }
+.scene-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16rpx; }
+.scene-icon { width: 56rpx; height: 56rpx; display: flex; align-items: center; justify-content: center; border-radius: 24rpx; background: #faf5ff; }
+.scene-icon-image { width: 32rpx; height: 32rpx; }
+.scene.is-on .scene-icon { background: var(--brand-500); color: #fff; }
+.scene-check { color: var(--brand-500); font-size: 26rpx; font-weight: 800; }
+.scene-label { display: block; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; color: var(--text-2); font-size: 24rpx; font-weight: 800; line-height: 1.25; }
+.scene-desc { display: block; margin-top: 7rpx; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; color: var(--text-4); font-size: 20rpx; line-height: 1.25; }
 
-/* ---------- 标题区 ---------- */
-.head { margin-bottom: 40rpx; }
-.title {
-  display: block;
-  font-size: 44rpx;
-  font-weight: 800;
-  line-height: 1.3;
-  color: var(--text-1);
-}
-.sub {
-  display: block;
-  margin-top: 16rpx;
-  font-size: 26rpx;
-  color: var(--text-3);
-  line-height: 1.6;
-}
+.word-scroll { flex: none; align-self: stretch; box-sizing: border-box; width: 100%; min-width: 0; height: 680rpx; margin-top: 32rpx; overflow: hidden; }
+.word-grid { box-sizing: border-box; width: 100%; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14rpx; }
+.word-card { box-sizing: border-box; width: 100%; min-width: 0; height: 94rpx; padding: 20rpx; display: flex; align-items: center; justify-content: space-between; gap: 10rpx; border: 2rpx solid #f1f5f9; border-radius: 24rpx; background: rgba(255, 255, 255, .94); box-shadow: 0 2rpx 4rpx rgba(15, 23, 42, .04); transition: transform .14s, background .14s, border-color .14s; }
+.word-card.is-on { border-color: #c084fc; background: rgba(243, 232, 255, .96); }
+.word-copy { min-width: 0; flex: 1; }
+.word-spelling { display: block; overflow: hidden; text-overflow: ellipsis; color: var(--text-2); font-size: 22rpx; line-height: 1.2; font-weight: 800; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+.word-hint { display: block; margin-top: 5rpx; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-4); font-size: 18rpx; line-height: 1.2; }
+.word-check { width: 30rpx; height: 30rpx; flex: 0 0 30rpx; display: flex; align-items: center; justify-content: center; border: 2rpx solid #cbd5e1; border-radius: 9rpx; color: #fff; font-size: 19rpx; font-weight: 900; }
+.word-card.is-on .word-check { border-color: var(--brand-600); background: var(--brand-600); }
+.word-pad { height: 24rpx; }
 
-/* ---------- S1 场景 ---------- */
-.scene-grid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 20rpx;
-}
-.scene {
-  position: relative;
-  width: calc((100% - 20rpx) / 2);
-  padding: 28rpx 24rpx;
-  border-radius: var(--r-md);
-  background: var(--surface);
-  border: 2rpx solid var(--border);
-  box-shadow: var(--shadow-xs);
-}
-.scene.is-on {
-  border-color: var(--brand-600);
-  background: var(--st-captured-bg);
-}
-.scene-icon { display: block; font-size: 40rpx; line-height: 1; }
-.scene-label {
-  display: block;
-  margin-top: 16rpx;
-  font-size: 28rpx;
-  font-weight: 700;
-  color: var(--text-1);
-}
-.scene-desc {
-  display: block;
-  margin-top: 6rpx;
-  font-size: 22rpx;
-  color: var(--text-4);
-}
-.scene-tick {
-  position: absolute;
-  top: 20rpx;
-  right: 20rpx;
-  width: 36rpx;
-  height: 36rpx;
-  border-radius: var(--r-full);
-  background: var(--brand-600);
-  color: #fff;
-  font-size: 22rpx;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
+.bottom-action { position: absolute; z-index: 3; left: 40rpx; width: 670rpx; bottom: calc(env(safe-area-inset-bottom) + 148rpx); }
+.primary { width: 670rpx; height: 104rpx; display: flex; align-items: center; justify-content: center; gap: 12rpx; border-radius: 32rpx; background: linear-gradient(90deg, #9333ea, #4f46e5); color: #fff; font-size: 28rpx; font-weight: 700; box-shadow: 0 13rpx 30rpx rgba(147, 51, 234, .25); transition: transform .14s, opacity .14s; }
+.primary.is-disabled { opacity: .5; }
+.arrow { font-size: 30rpx; line-height: 1; }
+.tap-down { transform: scale(.985); opacity: .9; }
 
-/* ---------- S2 词表 ---------- */
-.word-scroll {
-  flex: 1;
-  height: calc(100vh - 460rpx);
-}
-.word-grid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 16rpx;
-}
-.word {
-  padding: 20rpx 28rpx;
-  border-radius: var(--r-full);
-  background: var(--surface);
-  border: 2rpx solid var(--border);
-  font-size: 30rpx;
-  color: var(--text-2);
-  box-shadow: var(--shadow-xs);
-}
-.word.is-on {
-  background: linear-gradient(90deg, var(--brand-600), var(--indigo-600));
-  border-color: transparent;
-  color: #fff;
-  font-weight: 700;
-}
-.scroll-pad { height: 40rpx; }
+.result-screen { position: relative; z-index: 1; flex: 1; display: flex; flex-direction: column; }
+.result-main { flex: 1; padding-top: 56rpx; text-align: center; }
+.sparkle-mark { width: 88rpx; height: 88rpx; margin: 0 auto 22rpx; display: flex; align-items: center; justify-content: center; border-radius: 28rpx; border: 2rpx solid rgba(168, 85, 247, .3); background: linear-gradient(135deg, rgba(168,85,247,.18), rgba(236,72,153,.16)); color: var(--brand-500); font-size: 52rpx; }
+.result-title { display: block; color: var(--text-1); font-size: 44rpx; line-height: 1.3; font-weight: 900; }
+.result-sub { display: block; max-width: 590rpx; margin: 16rpx auto 0; color: var(--text-3); font-size: 22rpx; line-height: 1.55; }
+.result-card { margin-top: 46rpx; padding: 12rpx 28rpx; text-align: left; border: 2rpx solid var(--border); border-radius: 30rpx; background: rgba(255,255,255,.9); box-shadow: var(--shadow-card); }
+.result-row { min-height: 78rpx; display: flex; align-items: center; justify-content: space-between; gap: 20rpx; border-bottom: 2rpx solid #f1f5f9; }
+.result-row.no-border { border-bottom: 0; }
+.result-label { color: var(--text-4); font-size: 21rpx; }
+.result-value { max-width: 62%; color: var(--brand-500); font-size: 22rpx; font-weight: 800; text-align: right; }
+.result-value.green { color: var(--ok-500); }
+.result-value.purple { color: var(--brand-500); }
+.result-action { padding-top: 28rpx; }
+.result-primary { height: 100rpx; background: linear-gradient(90deg, #9333ea, #4f46e5 55%, #ec4899); font-size: 29rpx; font-weight: 800; }
 
-/* ---------- S3 结果 ---------- */
-.result {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  padding: 0 24rpx;
-}
-.result-mark {
-  width: 128rpx;
-  height: 128rpx;
-  border-radius: var(--r-xl);
-  background: linear-gradient(135deg, var(--brand-600), var(--indigo-600));
-  color: #fff;
-  font-size: 56rpx;
-  font-weight: 800;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: var(--shadow-btn);
-  margin-bottom: 48rpx;
-}
-.result-title {
-  font-size: 44rpx;
-  font-weight: 800;
-  color: var(--text-1);
-  line-height: 1.35;
-}
-.result-sub {
-  margin-top: 20rpx;
-  font-size: 27rpx;
-  color: var(--text-3);
-  line-height: 1.7;
-}
-.result-note {
-  margin-top: 16rpx;
-  font-size: 24rpx;
-  color: var(--text-4);
-}
+.ob-tabbar { position: absolute; z-index: 4; left: 0; right: 0; bottom: 0; height: calc(env(safe-area-inset-bottom) + 108rpx); padding-bottom: env(safe-area-inset-bottom); display: flex; align-items: center; border-top: 2rpx solid var(--border); background: rgba(255, 255, 255, .96); }
+.ob-tab { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4rpx; color: var(--text-3); font-size: 19rpx; font-weight: 700; }
+.ob-tab.is-on { color: var(--brand-700); font-weight: 900; }
+.ob-tab-icon { width: 56rpx; height: 56rpx; }
 
-/* ---------- 底部 ---------- */
-.foot {
-  margin-top: 48rpx;
-  width: 100%;
+@media (prefers-color-scheme: dark) {
+  .scene, .word-card, .result-card { background: rgba(15,23,42,.82); border-color: rgba(71,85,105,.45); }
+  .scene.is-on, .word-card.is-on { background: rgba(88,28,135,.55); border-color: rgba(192,132,252,.85); }
+  .scene-icon { background: rgba(30,41,59,.9); }
+  .result-row { border-color: rgba(51,65,85,.7); }
 }
-.foot-fixed {
-  position: sticky;
-  bottom: 0;
-  padding: 24rpx 0 calc(env(safe-area-inset-bottom) + 24rpx);
-  background: linear-gradient(180deg, transparent, var(--bg-bottom) 32rpx);
-}
-.skip {
-  display: block;
-  margin-top: 28rpx;
-  text-align: center;
-  font-size: 26rpx;
-  color: var(--text-4);
-}
-
-/* —— `[09-03]` 按原型补：S1 的用时徽章 + S3 的结果卡 —— */
-.badge {
-  display: inline-block; margin-bottom: 16rpx; padding: 8rpx 20rpx;
-  border-radius: var(--r-full); background: var(--st-captured-bg);
-  color: var(--brand-text); font-size: 20rpx; font-weight: 800;
-}
-.result-card { margin: 32rpx 0; padding: 28rpx; border-radius: var(--r-lg); text-align: left; }
-.rc-row { display: flex; align-items: baseline; justify-content: space-between; padding: 10rpx 0; }
-.rc-label { font-size: 22rpx; color: var(--text-3); }
-.rc-value { font-size: 24rpx; font-weight: 800; color: var(--text-1); max-width: 60%; text-align: right; }

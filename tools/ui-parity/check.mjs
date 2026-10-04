@@ -1,8 +1,7 @@
 // 三方比对的执行体。产出结构化 findings，渲染交给 cli.mjs。
 //
-// findings 的四种严重度，对应 `spec.mjs` 顶部的权威关系：
-//   RED    实现违反了 design.md §5（功能/文案/结构）—— 必须改实现
-//   PROTO  原型违反了 design.md §5 —— 原型越界，实现不要跟着抄，回头改原型
+// findings 的严重度，对应 `spec.mjs` 顶部的权威关系：
+//   RED    实现没有满足 React 原型或四项硬约束 —— 必须改实现
 //   SKIN   实现与原型在视觉/文案细节上不一致 —— 必须改实现（UI 还原）
 //   DOC    注释里的 §编号在 design.md 里找不着 —— 引用失效
 
@@ -99,22 +98,7 @@ export function runChecks() {
       }
     }
 
-    // 4) 原型是否越界（同一套判据，打在原型上；原型不管「结构判据」）
-    for (const [text, why] of sc.must) {
-      if (protoFiles.length && !has(protoText, text)) {
-        findings.push(finding('PROTO', sc.id, `原型缺规格文案「${text}」`, sc.proto.join(' / '), `${sc.ref}：${why}`));
-        protoCount++;
-      }
-    }
-    for (const [text, why] of sc.mustNot) {
-      const hits = hitsIgnoringAllow(protoText, text, (sc.allowIn || {})[text] || []);
-      if (hits.length) {
-        findings.push(finding('PROTO', sc.id, `原型出现禁止文案「${text}」`, hits.join(' ⏐ '), `${sc.ref}：${why}`));
-        protoCount++;
-      }
-    }
-
-    // 5) 视觉/文案还原的差集**推迟到分组之后**再算 —— 原型把 S0–S3 画在同一个
+    // 4) 视觉/文案还原的差集**推迟到分组之后**再算 —— 原型把 S0–S3 画在同一个
     //    OnboardingFlow.tsx 里，逐屏算会把同一批文案报三遍。
     groups.push({ sc, shell, implCjk, protoCjk });
 
@@ -149,7 +133,7 @@ export function runChecks() {
     findings.push(
       finding('SKIN', ids, `原型有、实现没有的文案 ${missing.length} 条`,
         missing.join('\n'),
-        '视觉/效果以原型为准；逐条判断是「该补」还是「规格没有、原型多画的」')
+        'React 原型是唯一 UI 标准；逐条补齐实现')
     );
     for (const g of gs) {
       const row = screenRows.find((r) => r.id === g.sc.id);
@@ -161,7 +145,7 @@ export function runChecks() {
   const implAll = walk(abs(IMPL), ['.wxml', '.wxss', '.ts', '.json']).filter((f) => !f.includes('/shared/'));
   const protoAll = walk(abs(PROTO), ['.tsx']);
   for (const { word, why } of RED_LINES) {
-    for (const [label, files, sev] of [['实现', implAll, 'RED'], ['原型', protoAll, 'PROTO']]) {
+    for (const [label, files, sev] of [['实现', implAll, 'RED']]) {
       const hits = [];
       for (const f of files) {
         const src = stripCommentsForRedline(f);
@@ -173,11 +157,11 @@ export function runChecks() {
     }
   }
 
-  // ── 全局：tabbar 四项 ───────────────────────────────────────
+  // ── 全局：React 完整产品的五项 tabbar ──────────────────────
   const appJson = JSON.parse(readFileSync(abs(IMPL + 'app.json'), 'utf8'));
   const tabs = (appJson.tabBar?.list || []).map((t) => t.text);
   if (tabs.join('/') !== TABBAR.join('/')) {
-    findings.push(finding('RED', '全局', 'tabbar 四项与 §5.2 不一致', `实际 ${tabs.join(' / ')}`, `应为 ${TABBAR.join(' / ')}`));
+    findings.push(finding('RED', '全局', 'tabbar 与 React 原型不一致', `实际 ${tabs.join(' / ')}`, `应为 ${TABBAR.join(' / ')}`));
   }
 
   // ── 全局：设计令牌能否追溯到原型 ─────────────────────────────

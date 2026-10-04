@@ -1,10 +1,13 @@
 <!-- 词包（tabbar 第 5 项，W1）。还原对象：`docs/prototype/src/components/WordPacksTab.tsx`。
      硬约束：不做词包商城 · 不做付费词包 · 应试包只给词表（不做题库/模考）· 自建包不做公开广场 -->
-<scroll-view class="hc-page {{themeClass}}" scroll-y enable-back-to-top>
+<scroll-view class="hc-page hc-immersive-page {{themeClass}}" scroll-y enable-back-to-top>
 
   <view class="head">
     <text class="head-title">词包</text>
-    <text class="head-count">我的 {{mine.length}} 个</text>
+    <view class="head-actions">
+      <text class="receive-link" bindtap="openReceive">接收分享</text>
+      <text class="head-count">我的 {{mine.length}} 个</text>
+    </view>
   </view>
 
   <!-- 正在学。一个包都没加时这一区**不留空框**，直接从「推荐给你」开始 -->
@@ -17,54 +20,60 @@
       </view>
       <!-- 进度条显示的是「已激活」，不是「已学」—— 全站统一用活词这个计量单位 -->
       <view class="bar"><view class="bar-fill" style="width:{{item.percent}}%"></view></view>
-      <text class="pack-sub">已激活 {{item.activatedWords}} 活词 · {{item.percent}}%</text>
+      <view class="pack-progress-row">
+        <text class="pack-sub">已激活 {{item.activatedWords}} 活词</text>
+        <text class="pack-percent">{{item.percent}}%</text>
+      </view>
     </view>
   </block>
 
-  <view class="sec-head">
-    <text class="hc-section-title">推荐给你</text>
-    <text class="sec-note">按你首启勾的场景出</text>
-  </view>
-  <view class="rec hc-card" wx:for="{{recommended}}" wx:key="id">
-    <view class="rec-left" data-id="{{item.id}}" bindtap="openPack">
-      <text class="pack-title">{{item.title}}</text>
-      <text class="pack-sub">{{item.totalWords}} 词 · {{item.description}}</text>
+  <view class="pack-group hc-card">
+    <view class="sec-head in-card">
+      <text class="hc-section-title">推荐给你</text>
+      <text class="sec-note brand-note">按首启偏好匹配</text>
     </view>
-    <view class="add-btn" data-id="{{item.id}}" catchtap="addPack">添加</view>
-  </view>
-  <view class="empty hc-card" wx:if="{{recommended.length === 0}}">
-    <text class="empty-title">推荐的都加完了</text>
-    <text class="empty-sub">你自己撞见的词永远排在词包前面，不加也不影响每天的队列。</text>
-  </view>
-
-  <view class="sec-head">
-    <text class="hc-section-title">考试词包</text>
-    <text class="sec-note">只给词表，不做题库 / 模考</text>
-  </view>
-  <view class="rec hc-card" wx:for="{{exams}}" wx:key="id">
-    <view class="rec-left" data-id="{{item.id}}" bindtap="openPack">
-      <text class="pack-title">{{item.title}}</text>
-      <text class="pack-sub">{{item.totalWords}} 词 · {{item.description}}</text>
+    <view class="rec" wx:for="{{recommended}}" wx:key="id">
+      <view class="rec-left" data-id="{{item.id}}" bindtap="openPack">
+        <text class="pack-title">{{item.title}}</text>
+        <text class="pack-sub one-line">{{item.totalWords}} 词 · {{item.description}}</text>
+      </view>
+      <view class="add-btn" data-id="{{item.id}}" catchtap="addPack">添加</view>
     </view>
-    <view class="add-btn {{item.joined ? 'is-on' : ''}}" data-id="{{item.id}}" catchtap="addPack">
-      {{item.joined ? '已加入' : '添加'}}
+    <view class="empty" wx:if="{{recommended.length === 0}}">
+      <text class="empty-title">推荐的都加完了</text>
+      <text class="empty-sub">你自己撞见的词永远排在词包前面，不加也不影响每天的队列。</text>
     </view>
   </view>
 
-  <view class="sec-head">
-    <text class="hc-section-title">我建的词包</text>
-    <text class="sec-add" bindtap="openCreate">＋ 新建</text>
-  </view>
-  <view class="rec hc-card" wx:for="{{customs}}" wx:key="id">
-    <view class="rec-left" data-id="{{item.id}}" bindtap="openPack">
-      <text class="pack-title">{{item.title}}</text>
-      <text class="pack-sub">{{item.totalWords}} 词 · {{item.description}}</text>
+  <view class="pack-group hc-card">
+    <view class="sec-head in-card">
+      <text class="hc-section-title">考试词包</text>
+      <text class="sec-note">仅提供词表，不做题库</text>
     </view>
-    <view class="add-btn" data-id="{{item.id}}" catchtap="sharePack">分享</view>
+    <view class="exam-grid">
+      <view class="exam-item" wx:for="{{exams}}" wx:key="id" data-id="{{item.id}}" bindtap="openPack">
+        <text class="pack-title">{{item.title}}</text>
+        <text class="pack-sub">{{item.totalWords}} 词</text>
+      </view>
+    </view>
   </view>
-  <view class="empty hc-card" wx:if="{{customs.length === 0}}">
-    <text class="empty-title">还没有自建词包</text>
-    <text class="empty-sub">把某个项目里反复出现的词攒成一个包，转发给同事。不做公开广场，只能点对点转发。</text>
+
+  <view class="pack-group hc-card">
+    <view class="sec-head in-card">
+      <text class="hc-section-title">我建的词包</text>
+      <text class="sec-add" bindtap="openCreate">＋ 新建</text>
+    </view>
+    <view class="rec" wx:for="{{customs}}" wx:key="id">
+      <view class="rec-left" data-id="{{item.id}}" bindtap="openPack">
+        <text class="pack-title">{{item.title}}</text>
+        <text class="pack-sub">{{item.totalWords}} 词 · {{item.activatedWords}} 已激活</text>
+      </view>
+      <view class="share-circle" data-id="{{item.id}}" catchtap="sharePack"><image src="/assets/ui/icon-share.svg" mode="aspectFit" /></view>
+    </view>
+    <view class="empty" wx:if="{{customs.length === 0}}">
+      <text class="empty-title">还没有自建词包</text>
+      <text class="empty-sub">把同一项目里的词攒成一个包，再点对点转发给同事。</text>
+    </view>
   </view>
 
   <view class="tail"></view>
@@ -80,5 +89,37 @@
       <view class="btn-ghost" bindtap="closeCreate">取消</view>
       <button class="btn-ok" bindtap="confirmCreate">建好了</button>
     </view>
+  </view>
+</view>
+
+<!-- 分享词包：按原型自绘，真正发送仍由微信 open-type=share 触发 -->
+<view class="mask" wx:if="{{sharePack}}" bindtap="closeShare" catchtouchmove="noop">
+  <view class="dialog share-dialog" catchtap="noop">
+    <view class="dlg-head">
+      <text class="dlg-title">分享词包</text>
+      <text class="dlg-close" bindtap="closeShare">×</text>
+    </view>
+    <view class="share-preview-card">
+      <text class="share-preview-label">词包分享预览卡片</text>
+      <text class="share-preview-title">{{sharePack.title}}</text>
+      <text class="share-preview-count">共 {{sharePack.totalWords}} 个精选生词</text>
+    </view>
+    <text class="share-copy">朋友点击后将 fork 一份到其账号并开始学习，不会影响你原词包的数据。</text>
+    <button class="wechat-share" open-type="share">发送给微信好友</button>
+  </view>
+</view>
+
+<view class="mask" wx:if="{{receiving}}" bindtap="closeReceive" catchtouchmove="noop">
+  <view class="dialog receive-dialog" catchtap="noop">
+    <view class="dlg-head">
+      <text class="dlg-title">接收分享</text>
+      <text class="dlg-close" bindtap="closeReceive">×</text>
+    </view>
+    <view class="receive-card">
+      <text class="receive-from">小林 分享了一个词包</text>
+      <text class="receive-title">产品 SaaS 常用词 · 312 词</text>
+      <text class="receive-preview">预览：churn / retention / onboarding …</text>
+    </view>
+    <button class="receive-btn" bindtap="receiveDemo">收下并开始学</button>
   </view>
 </view>

@@ -3,6 +3,12 @@
      不显示：段位 · 头衔 · 连胜火苗 · 学习时长 —— 排名是事实，头衔是身份。 -->
 <view class="hc-page {{themeClass}}">
 
+  <view class="nav">
+    <view class="nav-back" bindtap="backNav"><text class="nav-arrow">‹</text><text wx:if="{{view !== 'list'}}">榜单</text></view>
+    <text class="nav-title">{{navTitle}}</text>
+    <view class="nav-space"></view>
+  </view>
+
   <!-- 关掉排行榜的人：自己不上榜，也不看别人的榜 -->
   <view class="hidden-box hc-card" wx:if="{{hidden}}">
     <text class="hidden-title">你关掉了排行榜</text>
@@ -18,15 +24,20 @@
         <view class="seg-btn {{period === 'lastWeek' ? 'is-on' : ''}}" data-v="lastWeek" bindtap="switchPeriod">上周</view>
       </view>
 
+      <view class="measure-row">
+        <text>度量单位：本周新激活的活词数</text>
+        <text class="privacy-link" bindtap="showPrivacy">隐私说明</text>
+      </view>
+
       <scroll-view class="list" scroll-y>
         <view class="row hc-card {{item.isMe ? 'is-me' : ''}}" wx:for="{{rows}}" wx:key="id">
           <text class="row-rank hc-mono">{{item.rank}}</text>
-          <view class="row-avatar">{{item.initial}}</view>
+          <view class="row-avatar"><image src="/assets/ui/avatar.svg" mode="aspectFit" /></view>
           <view class="row-text">
             <text class="row-name">{{item.displayName}}</text>
-            <text class="row-num">本周激活 {{item.activatedThisWeek}}</text>
+            <text class="row-num">本周激活 {{item.activatedThisWeek}} 个活词</text>
           </view>
-          <view class="pk-btn" wx:if="{{!item.isMe}}" data-id="{{item.id}}" data-name="{{item.displayName}}" bindtap="invite">PK</view>
+          <view class="pk-btn" wx:if="{{!item.isMe}}" data-id="{{item.id}}" data-name="{{item.displayName}}" bindtap="invite"><image src="/assets/ui/icon-swords-white.svg" mode="aspectFit" /><text>PK</text></view>
         </view>
 
         <view class="empty hc-card" wx:if="{{rows.length <= 1}}">
@@ -39,87 +50,90 @@
 
       <!-- 我的名次固定在底部，即使已经在榜内 -->
       <view class="mine">
-        <text class="row-rank hc-mono">{{mine.rank}}</text>
-        <view class="row-avatar is-me">{{mine.initial}}</view>
+        <text class="mine-rank hc-mono">我 · {{mine.rank}}</text>
+        <view class="row-avatar is-me"><image src="/assets/ui/avatar.svg" mode="aspectFit" /></view>
         <view class="row-text">
-          <text class="row-name">你</text>
-          <text class="row-num">本周激活 {{mine.activatedThisWeek}}</text>
+          <text class="row-name">{{mine.displayName}}</text>
+          <text class="row-num">本周激活 {{mine.activatedThisWeek}} 个活词</text>
         </view>
-        <view class="ghost-btn small" bindtap="openPoster">成果海报</view>
+        <text class="mine-status">保持领先</text>
       </view>
     </block>
 
     <!-- L2 · 发起 PK -->
     <block wx:elif="{{view === 'invite'}}">
-      <view class="card hc-card">
-        <text class="card-title">和 {{opponent.displayName}} 比一局</text>
-        <view class="vs">
-          <view class="vs-side">
-            <view class="row-avatar big is-me">{{mine.initial}}</view>
-            <text class="vs-name">你</text>
+      <view class="invite-main">
+        <view class="swords-hero"><image src="/assets/ui/icon-swords.svg" mode="aspectFit" /></view>
+        <text class="card-title">与 {{opponent.displayName}} 进行词汇 PK</text>
+        <text class="card-sub">10 道四选一客观词义题 · 每题 10 秒</text>
+
+        <view class="match-card">
+          <text class="match-label">对战卡片预览</text>
+          <view class="match-row">
+            <view class="match-user"><view class="row-avatar"><image src="/assets/ui/avatar.svg" mode="aspectFit" /></view><text>{{mine.displayName}}</text></view>
+            <text class="vs-mark">VS</text>
+            <view class="match-user"><view class="row-avatar"><image src="/assets/ui/avatar.svg" mode="aspectFit" /></view><text>{{opponent.displayName}}</text></view>
           </view>
-          <text class="vs-mark">VS</text>
-          <view class="vs-side">
-            <view class="row-avatar big">{{opponent.initial}}</view>
-            <text class="vs-name">{{opponent.displayName}}</text>
-          </view>
+          <text class="match-scope">出题范围：优先挑选双方都学过的业务词表</text>
         </view>
-        <text class="card-sub">10 题看词选释义，每题 10 秒。题目优先出你们都学过的词。</text>
-        <!-- 分享必须用户主动点，**不自动弹转发、不做「分享后解锁」** -->
-        <button class="hc-primary-btn" open-type="share">转发战书给他</button>
-        <view class="ghost-btn" bindtap="startBattle">先自己打一局</view>
         <text class="card-note">等待对方应战 · 24 小时后失效</text>
       </view>
-      <view class="back" bindtap="backToList">← 回排行榜</view>
+      <view class="invite-actions">
+        <button class="hc-primary-btn" bindtap="startBattle">立刻开始模拟挑战</button>
+        <!-- 分享必须用户主动点，**不自动弹转发、不做「分享后解锁」** -->
+        <button class="share-invite" open-type="share">转发给微信好友</button>
+      </view>
     </block>
 
     <!-- L3 · 对战 -->
     <block wx:elif="{{view === 'battle'}}">
       <view class="scorebar">
-        <text class="score">你 {{myScore}}</text>
-        <text class="qidx">第 {{qIndex + 1}} / {{total}} 题</text>
-        <text class="score">{{opponent.displayName}} {{oppScore}}</text>
+        <text class="score">你 {{myScore}} － {{oppScore}} {{opponent.displayName}}</text>
+        <view class="timer {{seconds <= 3 ? 'is-hot' : ''}}">◷ <text>{{secondsText}}</text></view>
       </view>
-      <view class="timer {{seconds <= 3 ? 'is-hot' : ''}}">⏱ {{seconds}}</view>
 
       <view class="qcard hc-card">
+        <text class="qhint">请选出正确词义</text>
         <text class="qterm">{{question.term}}</text>
       </view>
 
       <view class="opts">
         <view class="opt hc-card {{item.cls}}" wx:for="{{options}}" wx:key="idx"
-              data-i="{{item.idx}}" bindtap="answer">{{item.text}}</view>
+              data-i="{{item.idx}}" bindtap="answer"><text class="opt-letter">{{item.label}}</text><text>{{item.text}}</text></view>
       </view>
+      <text class="battle-note">每题 10 秒倒计时，超时自动判错</text>
     </block>
 
     <!-- L4 · 结果 -->
     <block wx:else>
-      <view class="card hc-card">
+      <view class="result-summary">
         <text class="result-title">{{resultTitle}}</text>
         <view class="result-lines">
           <text class="result-line">你 {{myScore}}/{{total}} · {{mySeconds}}s</text>
+          <text class="result-sep">｜</text>
           <text class="result-line">{{opponent.displayName}} {{oppScore}}/{{total}} · {{oppSeconds}}s</text>
         </view>
       </view>
 
-      <view class="review-head" bindtap="toggleReview">
-        <text class="hc-section-title">逐题对照</text>
-        <text class="review-toggle">{{showReview ? '收起' : '展开'}}</text>
-      </view>
-      <block wx:if="{{showReview}}">
-        <view class="review hc-card" wx:for="{{review}}" wx:key="term">
-          <text class="review-term">{{item.term}}</text>
-          <text class="review-line {{item.ok ? 'is-ok' : 'is-bad'}}">
-            {{item.ok ? '✓ ' : '✗ '}}{{item.correct}}
-          </text>
-          <text class="review-mine" wx:if="{{!item.ok}}">你选的：{{item.picked}}</text>
+      <view class="review-card hc-card">
+        <view class="review-head" bindtap="toggleReview">
+          <text class="hc-section-title">逐题对照（{{total}} 题）</text>
+          <text class="review-toggle">{{showReview ? '⌃' : '⌄'}}</text>
         </view>
-      </block>
+        <block wx:if="{{showReview}}">
+          <view class="review" wx:for="{{review}}" wx:key="term">
+            <text class="review-term">{{item.term}}</text>
+            <text class="review-answer">{{item.correct}}</text>
+          </view>
+        </block>
+      </view>
 
       <view class="result-actions">
-        <view class="ghost-btn" bindtap="startBattle">再来一局</view>
-        <view class="ghost-btn" bindtap="openPoster">生成成果海报</view>
-        <view class="ghost-btn" bindtap="backToList">回排行榜</view>
+        <view class="poster-btn" bindtap="openPoster"><text>▧</text><text>生成成果海报</text></view>
+        <view class="result-secondary">
+          <view class="ghost-btn" bindtap="startBattle">再来一局</view>
+          <view class="ghost-btn neutral" bindtap="backToList">回排行榜</view>
+        </view>
       </view>
     </block>
 
@@ -140,13 +154,17 @@
 
   <!-- 成果海报。canvas 生成，用户自己保存 / 转发，不自动弹 -->
   <view class="mask" wx:if="{{poster}}" bindtap="closePoster" catchtouchmove="noop">
-    <view class="dialog" catchtap="noop">
-      <text class="dlg-title">成果海报</text>
-      <canvas class="poster-canvas" type="2d" id="poster"></canvas>
-      <view class="dlg-actions">
-        <view class="btn-ghost" bindtap="closePoster">关闭</view>
-        <button class="btn-ok" bindtap="savePoster">保存到相册</button>
+    <view class="dialog poster-dialog" catchtap="noop">
+      <view class="poster-head"><text class="dlg-title">活词学习成果</text><text class="poster-x" bindtap="closePoster">×</text></view>
+      <view class="poster-preview">
+        <text class="poster-brand">活词 · 真实原句驱动</text>
+        <text class="poster-title">本周激活 37 个活词</text>
+        <text class="poster-streak">连续学习 6 天 · 坚持不懈</text>
+        <view class="qr-box"><image src="/assets/ui/icon-qr.svg" mode="aspectFit" /></view>
+        <text class="poster-tip">微信扫码体验活词</text>
       </view>
+      <button class="poster-save" bindtap="savePoster">保存图片到手机</button>
+      <canvas class="poster-canvas-export" type="2d" id="poster"></canvas>
     </view>
   </view>
 

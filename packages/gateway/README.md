@@ -19,6 +19,8 @@
 | `wx_blueprint.py` | Flask Blueprint，提供 `/wx/login` `/wx/attach` `/wx/msgseccheck` |
 | `functions_blueprint.py` | Flask Blueprint，提供 `/functions/v1/<name>` 的**过检代理**（白名单） |
 | `nginx/huoci.conf` | nginx 站点配置 |
+| `nginx/joy-coder-cn.conf` | `joy-coder.cn` + `www` 静态说明站配置（与 API 网关分开） |
+| `site/index.html` | 已部署到 `/var/www/joy-coder.cn/index.html` 的说明站首页 |
 | `.env.example` | 需要的环境变量 |
 
 ## 装到词鲸的 Flask 里
@@ -91,6 +93,10 @@ Edge Function 的过检代理。**白名单**：`lookup-word`（P2 查词）、`
 - openid 从 `hc_wechat_identities` 按 JWT 里的 user_id 查，**不信客户端传的**。
   查不到就跳过检测并打一行日志 —— 那行日志是「审核到底有没有在跑」的唯一证据。
 - 命中违规返回 **422 + `blocked: true`**，不下发内容。
+- `lookup-word` 上游返回 502（包括 OpenRouter 限流、Edge Runtime/DNS/TLS 临时失败）时，网关只把**单词本身**交给
+  [Datamuse API](https://www.datamuse.com/api/) 读取 WordNet/Wiktionary 英文释义，返回
+  `degraded: true` 的可用结果；不会把原句或阅读上下文交给 Datamuse，也不会伪造中文释义。
+  Datamuse 同样不可用或查无此词时，才保留上游错误。
 
 ## 上线前必须做的两件事
 
@@ -101,7 +107,6 @@ Edge Function 的过检代理。**白名单**：`lookup-word`（P2 查词）、`
    网关是单一出口 IP ⇒ per-IP 限流对整个 App 生效 —— 默认的「每 IP 每 5 分钟 30 次登录」
    意味着**全 App 每分钟只能有 6 个人登录**。这是 T3 两个方案通吃的坑，不处理的话用户一多就
    集体登录失败。⚠️ **压测必须在网关那台机器上跑**，从自己电脑打过去是另一个 IP，测了等于没测。
-2. **实测 T5**（服务器域名是否要求与小程序同主体备案）—— **没有公开文档能答，只能在后台试**。
-   `[09-04]` 它的赌注变大了：`joy-coder.com` 是**个人**备案、小程序是**个体户**主体，
-   T5 的答案直接决定开发期能不能借 `api.joy-coder.com` 联调（`gateway-deployment.md` §1.1）。
-   ⚠️ 生产**不能**长期挂在 `.com` 上 —— 个人备案不得承载经营性服务。**不阻塞编码。**
+2. **T5 历史结论**：服务器域名不要求与小程序同主体备案，09-04 已由微信后台实测确认。
+   该结论曾用于临时 `.com` 联调；2026-09-09 已完成 `api.joy-coder.cn` 的 DNS、证书、
+   Nginx、客户端配置及公网复验，当前不再使用或测试旧 `.com` 网关。

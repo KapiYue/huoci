@@ -19,6 +19,7 @@ import * as theme from '../../services/theme';
 import { EV } from '../../shared/events';
 import { ApiError } from '../../services/types';
 import type { StudyCardMode } from '../../services/prefs';
+import { RELEASE_FEATURES } from '../../config/release';
 
 const CARD_MODE_LABEL: Record<StudyCardMode, string> = {
   context: '语境优先（先读原句再猜词）',
@@ -28,6 +29,7 @@ const CARD_MODE_LABEL: Record<StudyCardMode, string> = {
 Page({
   data: {
     themeClass: '',
+    releaseFeatures: RELEASE_FEATURES,
     themeSetting: 'system' as theme.ThemeSetting,
     displayName: '微信用户',
     avatarUrl: '',
@@ -55,7 +57,7 @@ Page({
 
   onShow() {
     if (onboarding.guard()) return;
-    this.getTabBar?.()?.setData({ active: 4 });
+    this.getTabBar?.()?.setData({ active: RELEASE_FEATURES.wordPacks ? 4 : 3 });
     theme.apply(this);
     this.loadLocal();
     void this.load();
@@ -64,7 +66,7 @@ Page({
   /** 本地就有的东西先画出来，别等网络 */
   loadLocal() {
     const s = auth.getSession();
-    const m = membership.ensureDailyFree();
+    const m = RELEASE_FEATURES.aiQuota ? membership.ensureDailyFree() : membership.get();
     const p = prefs.get();
     this.setData({
       displayName: s ? s.displayName : '微信用户',
@@ -103,7 +105,6 @@ Page({
   openReader() { wx.navigateTo({ url: '/pages/reader/reader' }); },
   openSettings() { wx.navigateTo({ url: '/pages/settings/settings' }); },
   openLicense() { wx.navigateTo({ url: '/pages/license/license' }); },
-  openAccount() { wx.navigateTo({ url: '/pages/login/login?manage=1' }); },
 
   openAbout() {
     wx.showModal({

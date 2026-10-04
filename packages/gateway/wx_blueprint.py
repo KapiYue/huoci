@@ -18,10 +18,12 @@ generateLink + verifyOtp，A 声称的「不用保管能登录全站的 secret�
 
 from __future__ import annotations
 
+import base64
 import hashlib
 import hmac
 import json
 import os
+import string
 import time
 from typing import Any
 from urllib import error, parse, request as urlrequest
@@ -411,3 +413,179 @@ def msg_sec_check():
         "checked": True,
         "raw": data,
     })
+
+
+# ─────────────────────── 小程序码（成果海报用） ───────────────────────
+#
+# `design.md` §5.9 L4 + §14.4：成果海报是 canvas 画的，**图上要带小程序码**，
+# 且所有分享带 `scene` 参数用于归因。小程序码只能服务端出 —— 接口要 access_token。
+#
+# 用 `getwxacodeunlimit`（数量不限）而不是 `createwxaqrcode`（总量上限 10 万，
+# 且生成后无法回收）：海报是一人一张、带各自 scene 的，数量天然发散。
+#
+# 🔴 **四个坑，每个都能让这条链路静默坏掉：**
+#
+# 1. **成功返回的是图片二进制，失败返回的是 JSON，HTTP 状态码都是 200。**
+#    照着别处的 `_post_json` 抄，失败时会拿 JSON 当图片存下去 ——
+#    海报上就是一块糊的方块，没有任何报错。必须先看 content-type 再决定怎么解。
+#
+# 2. **`page` 不带前导斜杠、不带 query**（`pages/today/today`，不是 `/pages/today/today?a=1`）。
+#    参数只能走 `scene`，这是接口的硬规定，不是风格问题。
+#
+# 3. **小程序没发布过，这个接口一定失败**（41030：page 不存在或未发布）。
+#    活词现在卡在 ICP 备案 → 认证 → 首次发布这条链上，所以**上线前这条接口是通不了的**，
+#    开发期必须传 `env_version=trial|develop` 且 `check_path=false`。
+#    这不是 bug，别去调参数，见返回里的 `hint`。
+#
+# 4. **scene 最长 32 个可见字符，且字符集是白名单**（数字、大小写字母，加
+#    `!#$&'()*+,/:;=?@-._~`）。中文、空格、`%`、`{}` 全部非法。
+#    超长或越界时微信也只回 40097 之类的泛化错误，不会告诉你是哪个字符 ——
+#    所以在**我们这一侧**先校验并把违规字符指出来。
+
+WXACODE_SCENE_CHARS = frozenset(string.ascii_letters + string.digits + "!#$&'()*+,/:;=?@-._~")
+WXACODE_SCENE_MAX = 32
+WXACODE_ENV_VERSIONS = {"release", "trial", "develop"}
+WXACODE_DEFAULT_PAGE = "pages/today/today"
+
+# 生成一张码要走一次微信接口，配额有限（getwxacodeunlimit 每日 10 万次）。
+# 同一个 scene 出的码是同一张图，缓存它是纯赚。
+# ⚠️ 与 `_access_token` 同样的限制：**多进程部署时这份缓存要换成 Redis**，
+# 否则 N 个进程各缓存各的，配额按 N 倍消耗。
+_wxacode_cache: dict[str, tuple[float, bytes, str]] = {}
+WXACODE_CACHE_TTL = 24 * 3600
+WXACODE_CACHE_MAX = 500
+
+
+def validate_wxacode_scene(scene: str) -> str | None:
+    """返回 None 表示合法，否则返回**能直接给人看**的原因。"""
+    if not scene:
+        return "scene 不能为空"
+    if len(scene) > WXACODE_SCENE_MAX:
+        return f"scene 最长 {WXACODE_SCENE_MAX} 个字符，收到 {len(scene)} 个"
+    bad = sorted({c for c in scene if c not in WXACODE_SCENE_CHARS})
+    if bad:
+        # 把违规字符列出来。微信只回一个泛化错误码，不列的话排查全靠猜。
+        return "scene 含非法字符 " + " ".join(repr(c) for c in bad) + \
+               "（只允许数字、大小写字母与 !#$&'()*+,/:;=?@-._~）"
+    return None
+
+
+def _post_binary(url: str, payload: dict[str, Any]) -> tuple[int, str, bytes]:
+    """和 `_post_json` 的区别只有一处：**不预设返回是 JSON**，原样把字节和 content-type 带回来。"""
+    body = json.dumps(payload).encode("utf-8")
+    req = urlrequest.Request(url, data=body, headers={"content-type": "application/json"}, method="POST")
+    try:
+        with urlrequest.urlopen(req, timeout=TIMEOUT) as resp:
+            return resp.status, resp.headers.get("content-type", ""), resp.read()
+    except error.HTTPError as exc:
+        return exc.code, exc.headers.get("content-type", ""), exc.read()
+
+
+def _looks_like_json(content_type: str, raw: bytes) -> bool:
+    """content-type 是主判据，但微信偶尔回 `text/plain` 带 JSON 体，所以再嗅一次首字节。"""
+    if "json" in content_type.lower():
+        return True
+    return raw[:1] in (b"{", b"[")
+
+
+# 值得给出「怎么办」的错误码。其余的原样透传 errcode，不编解释。
+WXACODE_HINTS = {
+    41030: "page 不存在或小程序还没发布过。活词现在卡在 ICP 备案 → 微信认证 → 首次发布，"
+           "**这条接口在首次发布前一定失败**。开发期请传 env_version=trial 或 develop。",
+    45009: "调用超出频率限制（getwxacodeunlimit 每日 10 万次）。先查是不是缓存没生效。",
+    40001: "access_token 失效。多进程部署时各进程各刷 token 会互相顶掉，换 Redis 共享。",
+    40097: "参数不在合法范围内，绝大多数情况是 scene 越界 —— 但我们这边已经先校验过了，"
+           "所以更可能是 page 带了前导斜杠或 query。",
+}
+
+
+@wx_bp.post("/wxacode")
+def wxacode():
+    """出一张带 scene 的小程序码，给 §5.9 L4 的成果海报用。
+
+    要登录态：这个接口消耗微信配额，不能裸奔。
+    返回 `{"image": "data:image/png;base64,…", "cached": bool}` 而不是裸二进制 ——
+    客户端拿到后 `writeFile` 成临时文件再 `canvas.drawImage`，
+    错误也能和别的 /wx/* 端点一样按 JSON 处理，不用为这一条写第二套解析。
+    """
+    auth_header = flask_request.headers.get("Authorization", "")
+    if not auth_header.lower().startswith("bearer "):
+        return jsonify({"message": "缺少登录态"}), 401
+    user = _user_from_token(auth_header[7:].strip())
+    if not user or not user.get("id"):
+        return jsonify({"message": "登录态无效"}), 401
+
+    body = flask_request.get_json(silent=True) or {}
+    scene = str(body.get("scene") or "").strip()
+    page = str(body.get("page") or WXACODE_DEFAULT_PAGE).strip().lstrip("/")
+    env_version = str(body.get("env_version") or os.getenv("HUOCI_WX_CODE_ENV", "release")).strip()
+    try:
+        width = int(body.get("width") or 280)
+    except (TypeError, ValueError):
+        width = 280
+    width = max(280, min(1280, width))  # 微信侧的合法区间，越界会直接报错
+
+    reason = validate_wxacode_scene(scene)
+    if reason:
+        return jsonify({"message": reason}), 400
+    if "?" in page or "#" in page:
+        # 坑 2：参数只能走 scene。这里挡住而不是悄悄截断——截断了页面会跳错地方。
+        return jsonify({"message": "page 不能带 query 或 hash，参数一律走 scene"}), 400
+    if env_version not in WXACODE_ENV_VERSIONS:
+        return jsonify({"message": f"env_version 只能是 {'/'.join(sorted(WXACODE_ENV_VERSIONS))}"}), 400
+
+    cache_key = f"{scene}|{page}|{env_version}|{width}"
+    now = time.time()
+    hit = _wxacode_cache.get(cache_key)
+    if hit and now < hit[0]:
+        return jsonify({"image": f"data:{hit[2]};base64,{hit[1].decode('ascii')}",
+                        "scene": scene, "page": page, "cached": True})
+
+    try:
+        token = _access_token()
+    except RuntimeError as exc:
+        return jsonify({"message": str(exc)}), 502
+
+    payload = {
+        "scene": scene,
+        "page": page,
+        "width": width,
+        "env_version": env_version,
+        # 只有正式版才有「已发布的页面」可校验；trial/develop 下开着必然 41030
+        "check_path": env_version == "release",
+        "auto_color": False,
+        "line_color": {"r": 0, "g": 0, "b": 0},
+        "is_hyaline": False,
+    }
+    status, content_type, raw = _post_binary(
+        f"https://api.weixin.qq.com/wxa/getwxacodeunlimit?access_token={token}", payload
+    )
+    if status != 200:
+        return jsonify({"message": "小程序码服务不可用", "status": status}), 502
+
+    # 坑 1：失败也回 200，靠 content-type 区分。**先判 JSON，再当图片用。**
+    if _looks_like_json(content_type, raw):
+        try:
+            data = json.loads(raw or b"{}")
+        except json.JSONDecodeError:
+            data = {"errmsg": raw[:200].decode("utf-8", "replace")}
+        errcode = int(data.get("errcode") or 0)
+        print(f"[wx] getwxacodeunlimit 失败 errcode={errcode} errmsg={data.get('errmsg')!r} "
+              f"page={page} env={env_version}")
+        return jsonify({
+            "message": "小程序码生成失败",
+            "errcode": errcode,
+            "errmsg": data.get("errmsg"),
+            "hint": WXACODE_HINTS.get(errcode),
+        }), 502
+
+    encoded = base64.b64encode(raw)
+    mime = content_type.split(";")[0].strip() or "image/png"
+
+    if len(_wxacode_cache) >= WXACODE_CACHE_MAX:
+        # 满了就整体清掉。做 LRU 要额外的数据结构，而这份缓存是纯优化、丢了只是多打一次接口。
+        _wxacode_cache.clear()
+    _wxacode_cache[cache_key] = (now + WXACODE_CACHE_TTL, encoded, mime)
+
+    return jsonify({"image": f"data:{mime};base64,{encoded.decode('ascii')}",
+                    "scene": scene, "page": page, "cached": False})

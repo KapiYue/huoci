@@ -8,16 +8,31 @@
 //   2. 分享**必须用户主动点**（open-type="share"），不自动弹转发、不做「分享后解锁」
 
 import * as lb from '../../services/leaderboard';
-import * as learning from '../../services/learning';
 import * as wordsSvc from '../../services/words';
 import * as auth from '../../services/auth';
 import * as prefs from '../../services/prefs';
 import * as theme from '../../services/theme';
 import * as tracker from '../../services/tracker';
+import * as wxacode from '../../services/wxacode';
 import { EV } from '../../shared/events';
 import type { LeaderRow, Question } from '../../services/leaderboard';
+import { guardReleaseFeature } from '../../config/release';
 
-interface OptionVM { idx: number; text: string; cls: string }
+/**
+ * 归因用的周标记，形如 `2026W36`。周界跟 §5.9 的榜一致：**周一 0 点**、按用户本地时区。
+ * 只用来给分享分桶，不参与任何计数，所以不引第三方日期库。
+ */
+function weekTag(): string {
+  const now = new Date();
+  // getDay() 里周日是 0，先掰成「周一 = 0」，否则周日会被算进下一周
+  const dow = (now.getDay() + 6) % 7;
+  const monday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - dow);
+  const jan1 = new Date(monday.getFullYear(), 0, 1);
+  const week = Math.floor((monday.getTime() - jan1.getTime()) / (7 * 24 * 3600 * 1000)) + 1;
+  return `${monday.getFullYear()}W${week}`;
+}
+
+interface OptionVM { idx: number; label: string; text: string; cls: string }
 interface ReviewVM { term: string; ok: boolean; correct: string; picked: string }
 
 const EMPTY_ROW: LeaderRow = { rank: 0, id: 'me', displayName: '你', initial: '你', activatedThisWeek: 0 };
@@ -28,6 +43,7 @@ Page({
     hidden: false,
     notice: false,
     view: 'list' as 'list' | 'invite' | 'battle' | 'result',
+    navTitle: '活词周榜',
     period: 'thisWeek' as lb.Period,
     rows: [] as LeaderRow[],
     mine: EMPTY_ROW,
@@ -40,6 +56,7 @@ Page({
     qIndex: 0,
     total: lb.PK_QUESTIONS,
     seconds: lb.PK_SECONDS,
+    secondsText: String(lb.PK_SECONDS).padStart(2, '0'),
     myScore: 0,
     oppScore: 0,
     mySeconds: 0,
@@ -56,6 +73,7 @@ Page({
   _pool: [] as { term: string; meaning: string }[],
 
   onShow() {
+    if (guardReleaseFeature('leaderboard')) return;
     theme.apply(this);
     const p = prefs.get();
     this.setData({ hidden: p.hideFromLeaderboard });
@@ -72,10 +90,10 @@ Page({
 
   async load() {
     const s = auth.getSession();
-    const summary = await learning.fetchHomeSummary();
     const { rows, mine } = lb.board(this.data.period, {
       name: s ? s.displayName : '你',
-      activatedThisWeek: summary.data.activated_this_week,
+      // 榜单本身仍是原型假数据，当前用户也固定用原型的 7，避免真假口径混排。
+      activatedThisWeek: 7,
     });
     this.setData({ rows, mine });
 
@@ -110,12 +128,24 @@ Page({
     const id = e.currentTarget.dataset.id as string;
     const opponent = this.data.rows.find((r) => r.id === id);
     if (!opponent) return;
-    this.setData({ view: 'invite', opponent });
+    this.setData({ view: 'invite', navTitle: '发起好友 PK', opponent });
   },
 
   backToList() {
     this.stopTimer();
-    this.setData({ view: 'list' });
+    this.setData({ view: 'list', navTitle: '活词周榜' });
+  },
+
+  backNav() {
+    if (this.data.view !== 'list') {
+      this.backToList();
+      return;
+    }
+    wx.navigateBack({ fail: () => wx.switchTab({ url: '/pages/profile/profile' }) });
+  },
+
+  showPrivacy() {
+    this.setData({ notice: true });
   },
 
   // ---------------- L3 对战 ----------------
@@ -125,6 +155,7 @@ Page({
     this._startAt = Date.now();
     this.setData({
       view: 'battle',
+      navTitle: `第 1 / ${questions.length} 题`,
       questions,
       qIndex: 0,
       total: questions.length,
@@ -143,8 +174,10 @@ Page({
     this.setData({
       qIndex: i,
       question: q,
-      options: q.options.map((text, idx) => ({ idx, text, cls: '' })),
+      options: q.options.map((text, idx) => ({ idx, label: `${String.fromCharCode(65 + idx)}.`, text, cls: '' })),
       seconds: lb.PK_SECONDS,
+      secondsText: String(lb.PK_SECONDS).padStart(2, '0'),
+      navTitle: `第 ${i + 1} / ${this.data.questions.length} 题`,
     });
     this.startTimer();
   },
@@ -157,7 +190,7 @@ Page({
         this.stopTimer();
         this.settle(-1); // 超时判错
       } else {
-        this.setData({ seconds: left });
+        this.setData({ seconds: left, secondsText: String(left).padStart(2, '0') });
       }
     }, 1000) as unknown as number;
   },
@@ -195,7 +228,6 @@ Page({
         picked: picked >= 0 ? q.options[picked] || '' : '（超时未答）',
       }),
     });
-
     setTimeout(() => {
       const next = this.data.qIndex + 1;
       if (next >= this.data.questions.length) this.finish();
@@ -207,9 +239,10 @@ Page({
     const mySeconds = Math.round((Date.now() - this._startAt) / 1000);
     const { myScore, oppScore } = this.data;
     // 胜负提示克制：不放彩带、不放连胜火苗、不放段位升降
-    const resultTitle = myScore > oppScore ? '你赢了' : myScore < oppScore ? '这局你输了' : '打平';
+    const resultTitle = myScore >= oppScore ? '你赢了' : '惜败';
     this.setData({
       view: 'result',
+      navTitle: '对战战报',
       mySeconds,
       oppSeconds: mySeconds + Math.round((Math.random() - 0.4) * 20),
       resultTitle,
@@ -272,10 +305,45 @@ Page({
 
         ctx.font = '400 11px sans-serif';
         ctx.fillText('活词 = 复习间隔已经拉过 21 天的词', 20, h - 24);
-        // TODO(P4)：右下角贴小程序码（要服务端 getUnlimited 接口，现在没有）
+
+        // 小程序码贴右下角。**异步补画，不阻塞海报** ——
+        // 小程序首次发布之前 getwxacodeunlimit 一定失败（41030，见 services/wxacode.ts），
+        // 拿不到码是常态；这时候海报照样是完整的，只是右下角空着。
+        this.drawQr(canvas, ctx, w, h);
       });
   },
 
+  /** 把小程序码画到已经铺好底的 canvas 右下角。失败一律静默 —— 用户要的是海报，不是错误。 */
+  drawQr(
+    canvas: WechatMiniprogram.Canvas,
+    ctx: WechatMiniprogram.CanvasRenderingContext.CanvasRenderingContext2D,
+    w: number,
+    h: number,
+  ) {
+    // 归因用（§14.4）：s=海报来源，w=周序号。两段都短，拼完远在 32 字符以内。
+    const scene = wxacode.buildScene({ s: 'poster', w: weekTag() });
+    wxacode
+      .qrFile(scene, 'pages/today/today')
+      .then((path) => {
+        if (!path || !this.data.poster) return;
+        const size = 64;
+        const x = w - size - 20;
+        const y = h - size - 20;
+        const img = canvas.createImage();
+        img.onload = () => {
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(x - 4, y - 4, size + 8, size + 8);
+          ctx.drawImage(img, x, y, size, size);
+        };
+        img.onerror = () => console.warn('[poster] 小程序码解码失败，海报保持无码版');
+        img.src = path;
+      })
+      .catch(() => { /* 见上：拿不到码不算错误 */ });
+  },
+
+  // ⚠️ 存图与补画小程序码是**两条独立的时序** —— 码还没画上去就点保存，存下来的是无码版。
+  // 现在不管它：首次发布之前码本来就拿不到，等 P4 真能出码了再看要不要等一等
+  // （用例在 docs/operations-and-tests.md 的人工复测清单 P3，不是 design.md 的编号）。
   savePoster() {
     const q = wx.createSelectorQuery().in(this);
     q.select('#poster')

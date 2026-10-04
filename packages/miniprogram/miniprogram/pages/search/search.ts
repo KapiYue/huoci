@@ -18,6 +18,7 @@ import { EV } from '../../shared/events';
 import { ApiError } from '../../services/types';
 import type { LookupResult } from '../../services/lookup';
 import * as theme from '../../services/theme';
+import { RELEASE_FEATURES } from '../../config/release';
 
 const DEBOUNCE_MS = 300;
 
@@ -34,23 +35,26 @@ Page({
     result: null as LookupResult | null,
     /** 第一条释义，界面上只显示它；parts 的其余项折在下面 */
     saved: false,
+    savedNotice: false,
     saving: false,
     playing: false,
   },
 
   /** setTimeout 句柄。放实例上不放 data，它不参与渲染 */
   timer: 0 as number,
+  saveNoticeTimer: 0 as number,
   /** 当前请求的序号：慢的旧响应回来时直接丢弃，否则会盖掉新结果 */
   seq: 0,
 
   onShow() {
     theme.apply(this);
     if (onboarding.guard()) return;
-    this.getTabBar?.()?.setData({ active: 3 }); // `[09-03]` 词包插进来后「查词」是第 4 项
+    this.getTabBar?.()?.setData({ active: RELEASE_FEATURES.wordPacks ? 3 : 2 });
   },
 
   onUnload() {
     if (this.timer) clearTimeout(this.timer);
+    if (this.saveNoticeTimer) clearTimeout(this.saveNoticeTimer);
   },
 
   onInput(e: WechatMiniprogram.Input) {
@@ -65,6 +69,10 @@ Page({
     this.timer = setTimeout(() => this.run(term), DEBOUNCE_MS) as unknown as number;
   },
 
+  onFocus() {
+    // 保持输入框成为唯一查询入口；真机上聚焦时不让空态遮住键盘输入反馈。
+  },
+
   /** 回车立刻查，不等防抖 */
   onConfirm() {
     if (this.timer) clearTimeout(this.timer);
@@ -74,15 +82,17 @@ Page({
 
   clear() {
     if (this.timer) clearTimeout(this.timer);
-    this.setData({ input: '', phase: 'idle', result: null, error: '', saved: false });
+    this.setData({ input: '', phase: 'idle', result: null, error: '', saved: false, savedNotice: false });
   },
 
   /** 点空态里的示例词，等于替用户把它敲进去 */
   useSample(e: WechatMiniprogram.BaseEvent) {
-    const w = e.currentTarget.dataset.w as string;
+    const w = String(e.currentTarget.dataset.word || '');
+    if (!w) return;
     if (this.timer) clearTimeout(this.timer);
-    this.setData({ input: w });
-    void this.run(w);
+    this.setData({ input: w, phase: 'loading', error: '', result: null }, () => {
+      void this.run(w);
+    });
   },
 
   async run(term: string) {
@@ -91,7 +101,7 @@ Page({
       return;
     }
     const mine = ++this.seq;
-    this.setData({ phase: 'loading', error: '', result: null, saved: false });
+    this.setData({ phase: 'loading', error: '', result: null, saved: false, savedNotice: false });
     try {
       const [result, saved] = await Promise.all([
         lookup.lookup(term),
@@ -124,7 +134,9 @@ Page({
     try {
       await lookup.addWord(r);
       // 加入后按钮变已加入态，**不弹模态框**（§5.4 S7）
-      this.setData({ saved: true });
+      this.setData({ saved: true, savedNotice: true });
+      if (this.saveNoticeTimer) clearTimeout(this.saveNoticeTimer);
+      this.saveNoticeTimer = setTimeout(() => this.setData({ savedNotice: false }), 3000) as unknown as number;
       tracker.track(EV.CAPTURE_CREATED, {
         source: 'lookup',
         source_domain: null,

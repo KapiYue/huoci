@@ -9,6 +9,7 @@ import * as tracker from '../../services/tracker';
 import * as theme from '../../services/theme';
 import { EV } from '../../shared/events';
 import type { CreditPack } from '../../services/membership';
+import { guardReleaseFeature } from '../../config/release';
 
 type PayState = 'idle' | 'confirm' | 'paying' | 'success' | 'failed';
 
@@ -43,6 +44,7 @@ Page({
   },
 
   onShow() {
+    if (guardReleaseFeature('aiQuota')) return;
     theme.apply(this);
     this.refresh();
     tracker.track(EV.SALES_VIEW, { sell_enabled: membership.SELL_ENABLED, ad_ready: pay.adReady() });

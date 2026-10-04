@@ -1,6 +1,6 @@
 {
   "navigationBarTitleText": "活词",
-  "navigationStyle": "default",
+  "navigationStyle": "custom",
   "disableScroll": true,
   "usingComponents": {}
 }

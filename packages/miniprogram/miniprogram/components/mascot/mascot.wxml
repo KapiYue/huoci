@@ -1,26 +1,13 @@
-<!-- 活词小助手。形状 1:1 对着 prototype/src/components/CuteMascot.tsx 的 SVG 摆，
-     1 个 SVG 单位 = 1.6rpx（viewBox 100 → 160rpx）。
-     用 view + border-radius 而不是 <image src="data:image/svg+xml...">：
-     小程序 image 对 SVG data-uri 的支持跨基础库/渲染器不一致，而这个形状全是椭圆和圆角矩形，
-     CSS 画得出来就没必要赌。 -->
+<!-- 活词小助手。直接复刻 prototype/src/components/CuteMascot.tsx 的 SVG 几何与渐变；
+     使用本地静态资源，避免 data-uri 在不同基础库中的兼容差异。 -->
 <view class="mascot">
-  <view class="bot">
-    <view class="aura"></view>
-    <view class="ear ear-l"></view>
-    <view class="ear ear-r"></view>
-    <view class="head"></view>
-    <view class="visor"></view>
-    <!-- 弯月眼与腮红压在面罩上层，顺序即层级 -->
-    <view class="eye eye-l"></view>
-    <view class="eye eye-r"></view>
-    <view class="cheek cheek-l"></view>
-    <view class="cheek cheek-r"></view>
-    <view class="antenna"></view>
-    <view class="antenna-tip"></view>
-    <view class="body"></view>
-  </view>
+  <view class="bot"><image class="bot-image" src="/assets/ui/mascot.svg" mode="aspectFit" /></view>
 
   <view class="bubble" wx:if="{{message}}">
+    <view class="bubble-head" wx:if="{{title}}">
+      <view class="bubble-title"><image class="bubble-title-icon" src="/assets/ui/icon-sparkles-purple.svg" mode="aspectFit" /><text>{{title}}</text></view>
+      <text class="bubble-action" wx:if="{{action}}" bindtap="tapAction">{{action}}</text>
+    </view>
     <text class="bubble-text">{{message}}</text>
   </view>
 </view>

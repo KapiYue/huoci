@@ -2,14 +2,14 @@
      09-03 裁决：**原型为准**。会员状态卡 / 排行榜 / AI 场景 / 阅读器 / 学习卡片模式 /
      主题三档 / 不参与排行榜开关，都是按原型加进来的。
      仍然不加：App 下载引导（二维码、按钮、跳转都算） · banner 广告位 —— 那两条是审核红线。 -->
-<scroll-view class="hc-page {{themeClass}}" scroll-y>
+<scroll-view class="hc-page hc-immersive-page {{themeClass}}" scroll-y>
 
   <!-- 用户头条 -->
   <view class="banner hc-card">
     <view class="banner-left">
       <view class="avatar">
         <image class="avatar-img" wx:if="{{avatarUrl}}" src="{{avatarUrl}}" mode="aspectFill" />
-        <text class="avatar-mark" wx:else>活</text>
+        <image class="avatar-img" wx:else src="/assets/ui/avatar.svg" mode="aspectFill" />
       </view>
       <view class="banner-text">
         <view class="banner-name-row">
@@ -19,13 +19,13 @@
         <text class="banner-id hc-mono">ID: {{shortId}}</text>
       </view>
     </view>
-    <view class="topup" bindtap="openVip">AI 额度</view>
+    <view class="topup" wx:if="{{releaseFeatures.aiQuota}}" bindtap="openVip">AI 额度</view>
   </view>
 
   <!-- M1 · AI Credits 状态卡。入口只有这一处 + 今日页顶部 -->
-  <view class="credits {{credits > 0 ? '' : 'is-zero'}}" bindtap="openVip">
+  <view class="credits {{credits > 0 ? '' : 'is-zero'}}" wx:if="{{releaseFeatures.aiQuota}}" bindtap="openVip">
     <view class="credits-left">
-      <view class="credits-icon">🪙</view>
+      <view class="credits-icon"><image src="/assets/ui/icon-coins.svg" /></view>
       <view>
         <view class="credits-row">
           <text class="credits-num">AI 额度：{{credits}} 次</text>
@@ -49,7 +49,7 @@
         <text class="stat-num stat-act hc-mono">{{summary.activated_count}}</text>
       </view>
       <view class="stat">
-        <text class="stat-label">还没激活</text>
+        <text class="stat-label">学习中词汇</text>
         <text class="stat-num stat-learn hc-mono">{{learningCount}}</text>
       </view>
     </view>
@@ -58,44 +58,35 @@
   <!-- 功能与设置 -->
   <view class="group hc-card">
 
-    <view class="item" bindtap="openAccount">
-      <view class="item-icon ic-green">🛡</view>
-      <view class="item-text">
-        <text class="item-title">登录 / 账号管理</text>
-        <text class="item-sub">当前账号：{{displayName}}（微信 / 词鲸）</text>
-      </view>
-      <text class="chev">›</text>
-    </view>
-
-    <view class="item" bindtap="openLeaderboard">
-      <view class="item-icon ic-amber">🏆</view>
+    <view class="item" wx:if="{{releaseFeatures.leaderboard}}" bindtap="openLeaderboard">
+      <view class="item-icon ic-amber"><image src="/assets/ui/icon-trophy.svg" /></view>
       <view class="item-text">
         <text class="item-title">活词周榜与好友 PK</text>
-        <text class="item-sub">按本周激活数排名，支持 10 题词义 PK</text>
+        <text class="item-sub">按本周激活数排名，支持 10 题客观词义 PK</text>
       </view>
       <text class="chev">›</text>
     </view>
 
-    <view class="item" bindtap="openAiScene">
-      <view class="item-icon ic-purple">🤖</view>
+    <view class="item" wx:if="{{releaseFeatures.aiPractice}}" bindtap="openAiScene">
+      <view class="item-icon ic-purple"><image src="/assets/ui/icon-bot.svg" /></view>
       <view class="item-text">
         <text class="item-title">AI 真实场景练习</text>
-        <text class="item-sub">把待复习的词放进站会 / 邮件场景里演一遍</text>
+        <text class="item-sub">将待复习词融入站会 / 邮件场景进行对话</text>
       </view>
       <text class="chev">›</text>
     </view>
 
     <view class="item" bindtap="openReader">
-      <view class="item-icon ic-blue">📖</view>
+      <view class="item-icon ic-blue"><image src="/assets/ui/icon-book.svg" /></view>
       <view class="item-text">
         <text class="item-title">场景阅读与点词收录</text>
-        <text class="item-sub">贴入英文文档或新闻，收词自动绑定原句</text>
+        <text class="item-sub">贴入英文技术文档或新闻，自动绑定原句</text>
       </view>
       <text class="chev">›</text>
     </view>
 
     <view class="item" bindtap="openCardMode">
-      <view class="item-icon ic-indigo">🎚</view>
+      <view class="item-icon ic-indigo"><image src="/assets/ui/icon-sliders.svg" /></view>
       <view class="item-text">
         <text class="item-title">学习卡片模式</text>
         <text class="item-sub">当前：{{cardModeLabel}}</text>
@@ -103,20 +94,10 @@
       <text class="chev">›</text>
     </view>
 
-    <!-- 每日目标。原型没画这一行，但它决定今日队列的配额，删了就没地方改了 -->
-    <view class="item" bindtap="openSettings">
-      <view class="item-icon ic-slate">⚙️</view>
-      <view class="item-text">
-        <text class="item-title">每日学习目标</text>
-        <text class="item-sub">当前：每日 {{dailyGoal}} 词</text>
-      </view>
-      <text class="chev">›</text>
-    </view>
-
-    <view class="item is-static">
+    <view class="item is-static" wx:if="{{releaseFeatures.leaderboard}}">
       <view class="item-text">
         <text class="item-title">小程序外观主题</text>
-        <text class="item-sub">默认跟随系统，可锁浅色或深色</text>
+        <text class="item-sub">默认跟随系统，支持柔粉浅色与夜间深色</text>
       </view>
       <view class="seg">
         <view class="seg-btn {{themeSetting === 'system' ? 'is-on' : ''}}" data-v="system" bindtap="setTheme">跟随</view>
@@ -128,40 +109,40 @@
     <view class="item is-static">
       <view class="item-text">
         <text class="item-title">不参与排行榜</text>
-        <text class="item-sub">开启后自己不上榜，也不看别人的榜</text>
+        <text class="item-sub">开启后自己不上榜，也不展示他人排行</text>
       </view>
       <switch checked="{{hideFromLeaderboard}}" color="#9333ea" bindchange="toggleLeaderboard" />
     </view>
 
     <view class="item" wx:if="{{canBind}}" bindtap="startBind">
-      <view class="item-icon ic-slate">🔗</view>
+      <view class="item-icon ic-slate"><image src="/assets/ui/icon-link.svg" /></view>
       <view class="item-text">
-        <text class="item-title">绑定词鲸账号</text>
-        <text class="item-sub">和 iOS、Chrome 扩展共用同一份生词库</text>
+        <text class="item-title">绑定词鲸（CiJing）账号</text>
+        <text class="item-sub">共享 iOS 与 Chrome 扩展生词库</text>
       </view>
       <text class="chev">›</text>
     </view>
 
     <view class="item" bindtap="openLicense">
-      <view class="item-icon ic-slate">📄</view>
+      <view class="item-icon ic-slate"><image src="/assets/ui/icon-file.svg" /></view>
       <view class="item-text">
         <text class="item-title">开源许可声明</text>
-        <text class="item-sub">NGSL / ECDICT · CC BY-SA 4.0 署名</text>
+        <text class="item-sub">NGSL / ECDICT / CC BY-SA 4.0 署名</text>
       </view>
       <text class="chev">›</text>
     </view>
 
     <view class="item" bindtap="openPrivacy">
-      <view class="item-icon ic-slate">🔒</view>
+      <view class="item-icon ic-slate"><image src="/assets/ui/icon-lock.svg" /></view>
       <view class="item-text">
-        <text class="item-title">隐私规范与数据保护</text>
+        <text class="item-title">隐私政策与规范</text>
         <text class="item-sub">微信授权规范与本地数据隔离</text>
       </view>
       <text class="chev">›</text>
     </view>
 
     <view class="item" bindtap="openAbout">
-      <view class="item-icon ic-slate">ℹ️</view>
+      <view class="item-icon ic-slate"><image src="/assets/ui/icon-info.svg" /></view>
       <view class="item-text">
         <text class="item-title">关于活词</text>
         <text class="item-sub">撞见 → 收进来 → 激活 · 场景生词记忆</text>
@@ -170,7 +151,7 @@
     </view>
 
     <view class="item is-danger" bindtap="logout">
-      <view class="item-icon ic-rose">⏻</view>
+      <view class="item-icon ic-rose"><image src="/assets/ui/icon-logout.svg" /></view>
       <view class="item-text">
         <text class="item-title is-danger-text">退出登录</text>
         <text class="item-sub">退出当前账号并回到登录页</text>
@@ -192,14 +173,14 @@
 <!-- 学习卡片模式 -->
 <view class="mask" wx:if="{{cardModal}}" bindtap="closeCardMode" catchtouchmove="noop">
   <view class="dialog" catchtap="noop">
-    <text class="dlg-title">选择学习卡片的呈现方式</text>
+    <text class="dlg-title">选择学习卡片呈现模式</text>
     <view class="opt {{cardMode === 'context' ? 'is-on' : ''}}" data-v="context" bindtap="pickCardMode">
       <text class="opt-title">语境优先模式（推荐）</text>
-      <text class="opt-sub">正面直接给英文原句并把生词挖空，靠上下文回忆。底座词没有原句，会自动退回传统模式。</text>
+      <text class="opt-sub">卡片正面直接呈现英文原句并将生词挖空，通过上下文推理回忆，强化语境激活。底座词没有原句时自动退回传统模式。</text>
     </view>
     <view class="opt {{cardMode === 'classic' ? 'is-on' : ''}}" data-v="classic" bindtap="pickCardMode">
       <text class="opt-title">传统模式</text>
-      <text class="opt-sub">正面给拼写与音标，背面给释义与原句，适合快速过筛。</text>
+      <text class="opt-sub">正面展示英文拼写与音标，反面展示中文释义与原句，适合快速过筛词汇。</text>
     </view>
   </view>
 </view>
@@ -210,7 +191,7 @@
     <text class="dlg-title">用词鲸账号登录</text>
     <text class="dlg-sub">小程序不提供邮箱注册。没有账号请继续用微信登录。</text>
     <input class="field" type="text" value="{{bindEmail}}" bindinput="onBindEmail"
-           placeholder="词鲸注册邮箱" placeholder-class="ph" />
+           placeholder="输入词鲸邮箱账号" placeholder-class="ph" />
     <input class="field" password value="{{bindPassword}}" bindinput="onBindPassword"
            placeholder="密码" placeholder-class="ph" bindconfirm="confirmBind" />
     <text class="dlg-err" wx:if="{{bindError}}">{{bindError}}</text>

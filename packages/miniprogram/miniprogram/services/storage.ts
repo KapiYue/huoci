@@ -25,6 +25,8 @@ export const SK = {
   LEADERBOARD_NOTICE: 'hc.leaderboard.notice',
   /** 阅读器「上次读的那篇」。**正文只存本地**（见 services/reader.ts） */
   READER_LAST: 'hc.reader.last',
+  /** 小程序码的本地文件缓存，按 scene 分（见 services/wxacode.ts） */
+  WXACODE: 'hc.cache.wxacode',
 } as const;
 
 export function read<T>(key: string, fallback: T): T {
@@ -42,6 +44,33 @@ export function write(key: string, value: unknown): void {
   } catch {
     // 存储写满或被清理，不该让业务流程崩掉
   }
+}
+
+/**
+ * 必须落盘才能继续的写入。复习队列不能使用上面的 best-effort write：
+ * 否则 storage 写满时 UI 会进到下一张，用户的这次复习却永久丢失。
+ */
+export function writeRequired(key: string, value: unknown): void {
+  wx.setStorageSync(key, value);
+}
+
+/** 退出时清理所有账号数据；设备级主题/学习卡偏好保留。 */
+export function clearAccountData(): void {
+  const keys = [
+    SK.PLAN_CACHE,
+    SK.CARDS_CACHE,
+    SK.HC_PROFILE,
+    SK.EVENT_BUFFER,
+    SK.MEMBERSHIP,
+    SK.WORDPACKS,
+    SK.LEADERBOARD_NOTICE,
+    SK.READER_LAST,
+    'hc.onboarding',
+    `${SK.WORDS_CACHE}.recent`,
+    `${SK.WORDS_CACHE}.due`,
+    `${SK.WORDS_CACHE}.activated`,
+  ];
+  for (const key of keys) remove(key);
 }
 
 export function remove(key: string): void {

@@ -12,6 +12,10 @@ import type { QueueRow } from './learning';
 import type { StudyCard } from '../shared/types';
 import type { Loaded } from './learning';
 import { ApiError } from './types';
+import { mockWords, mockWordsSummary } from './words.mock';
+
+/** 当前「我的生词」尚未接接口。改为 false 即恢复下方现成的 RPC + 缓存路径。 */
+export const USING_LOCAL_MOCK = true;
 
 /** 与 §5.4 S6 的三个 tab 一一对应 */
 export type WordFilter = 'recent' | 'due' | 'activated';
@@ -41,6 +45,10 @@ export async function fetchWords(
   filter: WordFilter,
   offset = 0
 ): Promise<Loaded<StudyCard[]>> {
+  if (USING_LOCAL_MOCK) {
+    const rows = mockWords(filter);
+    return { data: rows.slice(offset, offset + PAGE_SIZE), stale: false };
+  }
   try {
     const rows = await gw.rpc<QueueRow[]>('hc_list_words', {
       p_filter: filter,
@@ -62,8 +70,12 @@ export async function fetchWords(
 
 /** 首屏的即时渲染：先吐缓存再打网络，列表不要空一下再跳出来 */
 export function cachedWords(filter: WordFilter): StudyCard[] | null {
+  if (USING_LOCAL_MOCK) return mockWords(filter).slice(0, PAGE_SIZE);
   return store.readCache<StudyCard[]>(cacheKey(filter), CACHE_TTL);
 }
+
+/** mock 模式下供页面标题计数；真实接口模式继续使用 hc_home_summary。 */
+export const localMockSummary = mockWordsSummary;
 
 export function clearCache(): void {
   for (const f of FILTERS) store.remove(cacheKey(f.id));

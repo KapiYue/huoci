@@ -9,6 +9,7 @@ import * as theme from '../../services/theme';
 import * as tracker from '../../services/tracker';
 import { EV } from '../../shared/events';
 import type { WordPack } from '../../services/wordpacks';
+import { guardReleaseFeature } from '../../config/release';
 
 interface PackVM extends WordPack {
   percent: number;
@@ -32,9 +33,12 @@ Page({
     customs: [] as PackVM[],
     creating: false,
     newTitle: '',
+    sharePack: null as PackVM | null,
+    receiving: false,
   },
 
   onShow() {
+    if (guardReleaseFeature('wordPacks')) return;
     if (onboarding.guard()) return;
     this.getTabBar?.()?.setData({ active: 2 });
     theme.apply(this);
@@ -69,14 +73,15 @@ Page({
     const id = e.currentTarget.dataset.id as string;
     const pack = packs.find(id);
     if (!pack) return;
-    tracker.track(EV.WORDPACK_SHARED, { pack_id: id });
-    // 微信规定分享必须由用户主动触发，所以这里只能提示去用右上角转发，不能代为拉起
-    wx.showModal({
-      title: '分享词包',
-      content: `点右上角「···」转发给朋友，卡片会带上「${pack.title} · ${pack.totalWords} 词」和前几个词的预览。`,
-      showCancel: false,
-      confirmText: '知道了',
-    });
+    this.setData({ sharePack: toVM(pack) });
+  },
+
+  closeShare() { this.setData({ sharePack: null }); },
+  openReceive() { this.setData({ receiving: true }); },
+  closeReceive() { this.setData({ receiving: false }); },
+  receiveDemo() {
+    this.setData({ receiving: false });
+    wx.navigateTo({ url: '/pages/packdetail/packdetail?id=pack_saas&from=share&by=%E5%B0%8F%E6%9E%97' });
   },
 
   openCreate() { this.setData({ creating: true, newTitle: '' }); },
@@ -99,6 +104,11 @@ Page({
    * 想分享某个包，进那个包的详情页用右上角转发（带 from=share，落到 W3 接收屏）。
    */
   onShareAppMessage() {
+    const p = this.data.sharePack;
+    if (p) {
+      tracker.track(EV.WORDPACK_SHARED, { pack_id: p.id });
+      return { title: `${p.title} · ${p.totalWords} 词`, path: `/pages/packdetail/packdetail?id=${p.id}&from=share` };
+    }
     return { title: '活词 · 把撞见的英文生词练到能说出口', path: '/pages/today/today?scene=share' };
   },
 

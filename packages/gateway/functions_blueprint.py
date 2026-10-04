@@ -91,6 +91,83 @@ def _forward(name: str, token: str, payload: dict[str, Any]) -> tuple[int, Any]:
             return exc.code, json.loads(raw or b"null")
         except json.JSONDecodeError:
             return exc.code, {"message": raw.decode("utf-8", "replace")}
+    except (error.URLError, TimeoutError) as exc:
+        return 502, {"message": "上游服务不可用", "detail": str(exc.reason if isinstance(exc, error.URLError) else exc)}
+
+
+def _public_dictionary_fallback(payload: dict[str, Any]) -> dict[str, Any] | None:
+    """AI 供应方限流时，仅按单词查 Datamuse 的公开释义，避免查词直接 502。
+
+    不转发用户原句或阅读上下文。Datamuse 的 defs 来自 WordNet/Wiktionary；此处
+    只做英文释义降级，不伪造中文释义、例句或音标。
+    """
+    from urllib import parse
+
+    term = str(payload.get("word") or "").strip()
+    if not term or len(term) > 61 or not term[0].isalpha() or any(
+        not (char.isascii() and (char.isalpha() or char in "'-")) for char in term
+    ):
+        return None
+
+    req = urlrequest.Request(
+        "https://api.datamuse.com/words?" + parse.urlencode({"sp": term, "md": "dp", "max": 1}),
+        headers={"Accept": "application/json"},
+    )
+    try:
+        with urlrequest.urlopen(req, timeout=5) as resp:
+            rows = json.loads(resp.read() or b"null")
+    except (error.HTTPError, error.URLError, TimeoutError, json.JSONDecodeError):
+        return None
+    if not isinstance(rows, list) or not rows or not isinstance(rows[0], dict):
+        return None
+
+    entry = rows[0]
+    if str(entry.get("word") or "").lower() != term.lower():
+        return None
+    parts: list[dict[str, str]] = []
+    for raw_definition in entry.get("defs") or []:
+        if not isinstance(raw_definition, str):
+            continue
+        raw_pos, separator, raw_text = raw_definition.partition("\t")
+        text = raw_text.strip() if separator else raw_pos.strip()
+        if not text:
+            continue
+        parts.append({"partOfSpeech": raw_pos.strip() if separator else "word", "meaning": f"英文释义：{text}"})
+        if len(parts) == 4:
+            break
+    if not parts:
+        return None
+
+    definition_text = parts[0]["meaning"].removeprefix("英文释义：")
+    return {
+        "term": str(entry.get("word") or term),
+        "lemma": str(entry.get("word") or term),
+        "phonetic": "",
+        "parts": parts,
+        "primaryMeaning": parts[0]["meaning"],
+        "contextualMeaning": f"当前语境可参考：{definition_text}",
+        "englishDefinition": definition_text,
+        "exampleEnglish": "",
+        "exampleChinese": "",
+        "sentence": str(payload.get("sentence") or "")[:600],
+        "audioUrl": None,
+        "dictionaryAttribution": {
+            "provider": "Datamuse API",
+            "providerUrl": "https://www.datamuse.com/api/",
+            "sourceUrls": ["https://www.datamuse.com/api/"],
+            "licenses": [],
+        },
+    }
+
+
+def _should_use_lookup_fallback(status: int, data: Any) -> bool:
+    """lookup-word 的 502 都可安全降级，因为降级请求只携带校验后的单词。
+
+    线上 502 不只可能是 OPENROUTER_429，也可能是 Edge Runtime / DNS / TLS 的
+    临时失败。认证失败保持 401，不会进入这里；因此对 502 统一尝试公开词典，
+    比依赖某一种上游错误 JSON 的精确形状更稳。
+    """
+    return status == 502
 
 
 def _collect_text(data: Any) -> str:
@@ -147,7 +224,17 @@ def proxy(name: str):
     if not user or not user.get("id"):
         return jsonify({"message": "登录已失效"}), 401
 
-    status, data = _forward(name, token, flask_request.get_json(silent=True) or {})
+    request_payload = flask_request.get_json(silent=True) or {}
+    status, data = _forward(name, token, request_payload)
+    if name == "lookup-word" and _should_use_lookup_fallback(status, data):
+        fallback = _public_dictionary_fallback(request_payload)
+        if fallback:
+            upstream_error = (data.get("error") or data.get("message")) if isinstance(data, dict) else None
+            print(
+                f"[functions] lookup-word 上游 502，已降级到公开词典 "
+                f"term={fallback['term']!r} upstream_error={upstream_error!r}"
+            )
+            status, data = 200, {"data": fallback, "cached": False, "degraded": True}
     if status != 200:
         return jsonify(data if isinstance(data, dict) else {"message": "上游失败"}), status
 

@@ -19,8 +19,10 @@ export interface QueuedReview {
   responseTimeMs: number | null;
   /** 入队时刻，仅用于排序与展示，不参与幂等 */
   queuedAt: number;
-  /** 连续失败次数。达到上限就不再自动重试，等下次手动触发 */
+  /** 连续失败次数，封顶后仍保留，等后续 flush 触发。 */
   attempts: number;
+  /** 入队时的账号；防止 A 的离线复习在 B 的 session 下补发。 */
+  ownerUserId: string | null;
 }
 
 const MAX_ATTEMPTS = 8;
@@ -30,18 +32,26 @@ export function peek(): QueuedReview[] {
 }
 
 export function pendingCount(): number {
-  return peek().length;
+  const currentUserId = gw.getSession()?.userId ?? null;
+  return peek().filter((item) => item.ownerUserId === currentUserId).length;
 }
 
 function save(q: QueuedReview[]): void {
-  store.write(store.SK.REVIEW_QUEUE, q);
+  store.writeRequired(store.SK.REVIEW_QUEUE, q);
 }
 
-export function enqueue(item: Omit<QueuedReview, 'queuedAt' | 'attempts'>): void {
+export function enqueue(
+  item: Omit<QueuedReview, 'queuedAt' | 'attempts' | 'ownerUserId'>
+): void {
   const q = peek();
   // 同一个 clientEventId 只入一次
   if (q.some((x) => x.clientEventId === item.clientEventId)) return;
-  q.push({ ...item, queuedAt: Date.now(), attempts: 0 });
+  q.push({
+    ...item,
+    queuedAt: Date.now(),
+    attempts: 0,
+    ownerUserId: gw.getSession()?.userId ?? null,
+  });
   save(q);
 }
 
@@ -98,27 +108,31 @@ export async function flush(): Promise<FlushResult> {
 
   try {
     let q = peek();
+    const currentUserId = gw.getSession()?.userId ?? null;
     while (q.length > 0) {
-      const head = q[0] as QueuedReview;
+      // 队列可同时保留多个账号的离线记录。只处理当前账号的条目，
+      // 不让 A 占在队首阻塞 B，也绝不用 B 的 token 发 A 的数据。
+      const index = q.findIndex((item) => item.ownerUserId === currentUserId);
+      if (index < 0) break;
+      const head = q[index] as QueuedReview;
       try {
         const res = await send(head);
         words.push(res.word);
         if (res.newly_activated) activated.push(head.wordId);
         sent++;
-        q = peek().slice(1);
+        q = peek();
+        q.splice(index, 1);
         save(q);
       } catch (e) {
         const err = e as ApiError;
         if (err.kind === 'network' || err.kind === 'ratelimit' || err.kind === 'server') {
-          head.attempts += 1;
+          head.attempts = Math.min(head.attempts + 1, MAX_ATTEMPTS);
           offline = err.kind === 'network';
           if (head.attempts >= MAX_ATTEMPTS) {
-            console.error('[queue] 超过重试上限，丢弃', head);
-            q = peek().slice(1);
-          } else {
-            q = peek();
-            q[0] = head;
+            console.warn('[queue] 达到重试计数上限，保留待后续补发', head);
           }
+          q = peek();
+          q[index] = head;
           save(q);
           break; // 网络不通就别继续捶了
         }
@@ -128,10 +142,12 @@ export async function flush(): Promise<FlushResult> {
         }
         // 4xx 业务错误：这条永远发不成功，丢掉，别堵住后面的
         console.error('[queue] 丢弃无法补发的条目', head, err.message);
-        q = peek().slice(1);
+        q = peek();
+        q.splice(index, 1);
         save(q);
       }
     }
+    if (sent > 0) store.remove(store.SK.PLAN_CACHE);
   } finally {
     flushing = false;
   }

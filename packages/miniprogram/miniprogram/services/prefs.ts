@@ -7,6 +7,19 @@
 import * as store from './storage';
 
 /**
+ * 临时验收开关：今日队列已经学完时，仍允许重放样例卡片来切换、检查两种呈现模式。
+ * 用户确认语境模式测试完成后恢复为 false，并保留正常的「空队列不可进入」判断。
+ */
+export const TEMP_ALLOW_CARD_MODE_REPLAY = false;
+
+/**
+ * 临时验收开关：只把今日页的概览显示成 35 个到期 + 8 个新词，
+ * 用来真机检查「积压 43 / 本轮最多 20」的排版和文案。
+ * 它不伪造卡片、不写服务端、不改复习队列；测完必须恢复 false。
+ */
+export const TEMP_SHOW_BACKLOG_TEST = false;
+
+/**
  * 学习卡片的两种呈现方式（原型 ProfileTab「学习卡片模式」）：
  *   context —— 正面直接给英文原句、把生词挖空，靠上下文回忆
  *   classic —— 正面给拼写 + 音标，背面给释义与原句

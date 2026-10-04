@@ -185,7 +185,13 @@ page {
   --rate-3-fg: #065f46;
   --rate-3-bg: rgba(236, 253, 245, 0.85);
   --rate-3-bd: #a7f3d0;
-  background: linear-gradient(180deg, var(--bg-top) 0%, var(--bg-mid) 45%, var(--bg-bottom) 100%);
+  background-color: var(--bg-bottom);
+  background-image:
+    radial-gradient(circle at 10% 7%, rgba(244,114,182,.16) 0, rgba(216,180,254,.12) 18%, transparent 37%),
+    radial-gradient(circle at 92% 10%, rgba(147,197,253,.17) 0, rgba(199,210,254,.12) 20%, transparent 39%),
+    radial-gradient(circle, rgba(168,85,247,.10) 1rpx, transparent 1rpx),
+    linear-gradient(180deg, var(--bg-top) 0%, var(--bg-mid) 45%, var(--bg-bottom) 100%);
+  background-size: auto, auto, 28rpx 28rpx, auto;
   color: var(--text-1);
 }
 
@@ -233,6 +239,12 @@ page {
   --rate-3-fg: #6ee7b7;
   --rate-3-bg: rgba(2, 44, 34, 0.4);
   --rate-3-bd: rgba(6, 95, 70, 0.5);
-  background: linear-gradient(180deg, var(--bg-top) 0%, var(--bg-mid) 45%, var(--bg-bottom) 100%);
+  background-color: var(--bg-bottom);
+  background-image:
+    radial-gradient(circle at 8% 8%, rgba(88,28,135,.34) 0, transparent 36%),
+    radial-gradient(circle at 94% 12%, rgba(30,27,75,.45) 0, transparent 40%),
+    radial-gradient(circle, rgba(192,132,252,.12) 1rpx, transparent 1rpx),
+    linear-gradient(180deg, var(--bg-top) 0%, var(--bg-mid) 45%, var(--bg-bottom) 100%);
+  background-size: auto, auto, 28rpx 28rpx, auto;
   color: var(--text-1);
 }

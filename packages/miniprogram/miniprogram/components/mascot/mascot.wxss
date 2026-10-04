@@ -1,15 +1,21 @@
 /* 坐标全部由 CuteMascot.tsx 的 SVG 换算而来：left/top/width/height = SVG 值 × 1.6rpx。
    改形状请回去对照那份 SVG，不要凭手感调。 */
 
-.mascot { display: flex; align-items: center; gap: 20rpx; }
+.mascot { display: flex; align-items: center; gap: 16rpx; }
 
 .bot {
   position: relative;
   flex: none;
-  width: 160rpx;
-  height: 160rpx;
+  width: 144rpx;
+  height: 144rpx;
   animation: hc-bot-float 3s ease-in-out infinite;
 }
+.bot::before {
+  content: ''; position: absolute; inset: 12rpx; border-radius: 50%;
+  background: radial-gradient(circle, rgba(192,132,252,.34), rgba(244,114,182,.16) 55%, transparent 74%);
+  transform: scale(1.18);
+}
+.bot-image { position: relative; z-index: 1; width: 144rpx; height: 144rpx; }
 
 /* 原型是 blur-xl 的光晕。用 radial-gradient 而不是 filter: blur——
    后者在低端安卓上会把整个页面推进合成层，代价与收益不成比例。 */
@@ -157,8 +163,10 @@
   border-left: 2rpx solid var(--border);
   border-bottom: 2rpx solid var(--border);
 }
+.bubble-head { display: flex; align-items: center; justify-content: space-between; gap: 12rpx; margin-bottom: 5rpx; }
+.bubble-title { display: flex; align-items: center; gap: 6rpx; color: var(--brand-text); font-size: 22rpx; font-weight: 900; }
+.bubble-title-icon { width: 28rpx; height: 28rpx; flex: none; }
+.bubble-action { flex: none; color: var(--brand-text); font-size: 20rpx; font-weight: 800; }
 .bubble-text {
-  font-size: 24rpx;
-  line-height: 1.65;
-  color: var(--text-2);
+  display: block; font-size: 23rpx; line-height: 1.55; color: var(--text-1); font-weight: 700;
 }

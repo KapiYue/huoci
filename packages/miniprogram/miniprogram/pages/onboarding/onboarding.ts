@@ -19,24 +19,62 @@ interface SceneOption {
   label: string;
   desc: string;
   icon: string;
+  iconOn: string;
+  selected: boolean;
 }
 
-/** §5.3 S1 列的七项，一项不多一项不少 */
+/** React OnboardingFlow 的六张场景卡。 */
 const SCENES: SceneOption[] = [
-  { id: 'tech_doc', label: '技术文档', desc: 'API / MDN / 官方手册', icon: '📄' },
-  { id: 'saas', label: '产品 SaaS', desc: 'Figma / Notion / Linear', icon: '🧩' },
-  { id: 'email', label: '工作邮件', desc: '邮件 / Slack / 会议', icon: '✉️' },
-  { id: 'article', label: '行业文章', desc: '资讯 / 博客 / 周刊', icon: '📰' },
-  { id: 'github', label: 'GitHub', desc: 'Issue / PR / Code Review', icon: '🐙' },
-  { id: 'paper', label: '论文', desc: 'arXiv / 期刊', icon: '🎓' },
-  { id: 'other', label: '其他', desc: '别的场景', icon: '✨' },
+  { id: 'tech_doc', label: '技术文档 / API', desc: 'Stripe, AWS, MDN 等', icon: '/assets/ui/scene-code.svg', iconOn: '/assets/ui/scene-code-on.svg', selected: false },
+  { id: 'saas', label: '产品 SaaS / 工具', desc: 'Linear, Figma, Notion 等', icon: '/assets/ui/scene-layers.svg', iconOn: '/assets/ui/scene-layers-on.svg', selected: false },
+  { id: 'github', label: 'GitHub 源码 / PR', desc: 'Issue 讨论、代码 Review', icon: '/assets/ui/scene-book.svg', iconOn: '/assets/ui/scene-book-on.svg', selected: false },
+  { id: 'email', label: '工作邮件 / Slack', desc: '日常沟通、跨国会议', icon: '/assets/ui/scene-mail.svg', iconOn: '/assets/ui/scene-mail-on.svg', selected: false },
+  { id: 'paper', label: '学术论文 / 博客', desc: 'arXiv, Medium, Substack', icon: '/assets/ui/scene-cap.svg', iconOn: '/assets/ui/scene-cap-on.svg', selected: false },
+  { id: 'other', label: '行业热点 / 资讯', desc: 'TechCrunch, HN, X', icon: '/assets/ui/scene-globe.svg', iconOn: '/assets/ui/scene-globe-on.svg', selected: false },
 ];
 
 interface WordCell {
   spelling: string;
   band: number;
+  hint: string;
   checked: boolean;
 }
+
+/** 与 prototype 的 ONBOARDING_TEST_WORDS 一一对应。 */
+const PROTOTYPE_WORDS: Array<Omit<WordCell, 'checked'>> = [
+  { spelling: 'feature', band: 1, hint: '功能，特性' },
+  { spelling: 'process', band: 1, hint: '处理，流程' },
+  { spelling: 'request', band: 1, hint: '请求，要求' },
+  { spelling: 'standard', band: 1, hint: '标准，规范' },
+  { spelling: 'response', band: 1, hint: '响应，回答' },
+  { spelling: 'implement', band: 2, hint: '实施，实现' },
+  { spelling: 'deploy', band: 2, hint: '部署，配置' },
+  { spelling: 'maintain', band: 2, hint: '维护，保持' },
+  { spelling: 'convert', band: 2, hint: '转换，转变' },
+  { spelling: 'execute', band: 2, hint: '执行，实行' },
+  { spelling: 'latency', band: 3, hint: '延迟' },
+  { spelling: 'resilient', band: 3, hint: '有弹性的，容灾的' },
+  { spelling: 'retention', band: 3, hint: '留存，保留' },
+  { spelling: 'asynchronous', band: 3, hint: '异步的' },
+  { spelling: 'bottleneck', band: 3, hint: '瓶颈' },
+  { spelling: 'mitigate', band: 4, hint: '减轻，缓解' },
+  { spelling: 'concurrency', band: 4, hint: '并发' },
+  { spelling: 'granular', band: 4, hint: '细粒度的' },
+  { spelling: 'reconcile', band: 4, hint: '协调，对账' },
+  { spelling: 'orchestrate', band: 4, hint: '编排，协调' },
+  { spelling: 'idempotent', band: 5, hint: '幂等的' },
+  { spelling: 'telemetry', band: 5, hint: '遥测，指标' },
+  { spelling: 'scaffold', band: 5, hint: '脚手架' },
+  { spelling: 'deprecate', band: 5, hint: '废弃，弃用' },
+  { spelling: 'throughput', band: 5, hint: '吞吐量' },
+  { spelling: 'heuristics', band: 6, hint: '启发式，经验法则' },
+  { spelling: 'amortize', band: 6, hint: '摊销，分摊' },
+  { spelling: 'ephemeral', band: 6, hint: '短暂的，瞬时的' },
+  { spelling: 'canonical', band: 6, hint: '规范的，正统的' },
+  { spelling: 'ubiquitous', band: 6, hint: '普遍存在的，无处不在的' },
+];
+
+const DEFAULT_CHECKED = new Set(['implement', 'latency', 'mitigate', 'idempotent']);
 
 Page({
   data: {
@@ -47,6 +85,14 @@ Page({
 
     words: [] as WordCell[],
     checkedCount: 0,
+
+    previewTabs: [
+      { text: '今日', icon: '/assets/ui/tab-today.svg' },
+      { text: '我的生词', icon: '/assets/ui/tab-words.svg' },
+      { text: '词包', icon: '/assets/ui/tab-pack.svg' },
+      { text: '查词', icon: '/assets/ui/tab-search.svg' },
+      { text: '我的', icon: '/assets/ui/tab-profile-on.svg', active: true },
+    ],
 
     seedCount: SEED_COUNT,
     seededCount: 0,
@@ -64,13 +110,16 @@ Page({
     theme.apply(this);
     tracker.track(EV.ONBOARDING_START);
     try {
-      this.pool = onboarding.sampleQuestions();
+      const poolBySpelling = new Map(onboarding.loadBasePool().map((word) => [word.spelling, word]));
+      this.pool = PROTOTYPE_WORDS.map((word) => poolBySpelling.get(word.spelling))
+        .filter((word): word is BaseWord => Boolean(word));
     } catch (e) {
       console.error('[onboarding] 词表读取失败', e);
       this.pool = [];
     }
     this.setData({
-      words: this.pool.map((w) => ({ spelling: w.spelling, band: w.band, checked: false })),
+      words: PROTOTYPE_WORDS.map((word) => ({ ...word, checked: DEFAULT_CHECKED.has(word.spelling) })),
+      checkedCount: DEFAULT_CHECKED.size,
     });
   },
 
@@ -81,11 +130,15 @@ Page({
     const next = this.data.selectedScenes.includes(id)
       ? this.data.selectedScenes.filter((s) => s !== id)
       : [...this.data.selectedScenes, id];
-    this.setData({ selectedScenes: next });
+    this.setData({
+      selectedScenes: next,
+      scenes: this.data.scenes.map((scene) => ({ ...scene, selected: next.includes(scene.id) })),
+    });
   },
 
-  /** 「下一步」和「跳过」走同一条路 —— 这一屏本来就可跳过（§5.3 S1） */
+  /** React 原型要求至少选一个场景，按钮才可进入下一步。 */
   goStep2() {
+    if (this.data.selectedScenes.length === 0) return;
     this.setData({ step: 2 });
   },
 
@@ -95,13 +148,17 @@ Page({
 
   // ---------------- S2 30 词勾选 ----------------
 
-  toggleWord(e: WechatMiniprogram.BaseEvent<Record<string, never>, { index: number }>) {
-    const i = Number(e.currentTarget.dataset.index);
+  toggleWord(e: WechatMiniprogram.BaseEvent<Record<string, never>, { spelling: string }>) {
+    const spelling = String(e.currentTarget.dataset.spelling || '');
+    const i = this.data.words.findIndex((word) => word.spelling === spelling);
     const cell = this.data.words[i];
     if (!cell) return;
     const checked = !cell.checked;
+    // 整列替换比动态路径 setData 在 scroll-view + wx:for 中稳定，真机不会出现
+    // dataset 已触发但局部节点没有刷新的假死反馈。
+    const words = this.data.words.map((word, index) => index === i ? { ...word, checked } : word);
     this.setData({
-      [`words[${i}].checked`]: checked,
+      words,
       checkedCount: this.data.checkedCount + (checked ? 1 : -1),
     });
     if (checked) {
@@ -119,7 +176,8 @@ Page({
     if (this.data.busy) return;
     this.setData({ busy: true });
     try {
-      const checked = this.pool.filter((_, i) => this.data.words[i]?.checked);
+      const checkedSpellings = new Set(this.data.words.filter((word) => word.checked).map((word) => word.spelling));
+      const checked = this.pool.filter((word) => checkedSpellings.has(word.spelling));
       const result = onboarding.finish(this.data.selectedScenes, checked);
       tracker.track(EV.ONBOARDING_DONE, {
         scenes: result.scenes,

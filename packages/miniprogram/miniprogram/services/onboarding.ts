@@ -13,6 +13,7 @@
 
 import * as store from './storage';
 import { rpc } from './gateway';
+import basePack from './baseWords.generated';
 import {
   parseBasePack,
   sampleOnboardingWords,
@@ -48,21 +49,19 @@ let cache: BaseWord[] | null = null;
 /**
  * 读本地底座词表。93KB / 4553 词，同步读一次缓存在内存里。
  *
- * 用 `require` 而不是 `wx.getFileSystemManager`：JSON 走 require 会被打进代码包，
- * 不额外占一次 IO，也不会在真机上碰到路径问题。
+ * 词表由 sync-wordpack.mjs 生成为 TS 模块，走小程序正常的编译链。
+ * 不直接 require JSON：微信运行时会把它解析成不存在的 `.json.js` 模块。
  */
 export function loadBasePool(): BaseWord[] {
   if (cache) return cache;
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const pack = require('../assets/base-words.json') as BasePack;
+  const pack = basePack as unknown as BasePack;
   cache = parseBasePack(pack.words);
   return cache;
 }
 
 /** 开源许可页要显示的署名（CC BY-SA 4.0 的义务，不是可选项） */
 export function attribution(): { license: string; licenseUrl: string; authors: string } {
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const pack = require('../assets/base-words.json') as BasePack;
+  const pack = basePack as unknown as BasePack;
   return { license: pack.license, licenseUrl: pack.licenseUrl, authors: pack.authors };
 }
 

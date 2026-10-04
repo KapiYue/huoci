@@ -13,6 +13,9 @@ import * as store from './storage';
 import type { Session } from './types';
 
 const TIMEOUT_MS = 20000;
+// 不等 JWT 真正过期才刷新。给网络往返留一分钟余量，避免请求发出时 token
+// 在客户端看来还有效、到 Supabase 时却已经过期。
+const TOKEN_REFRESH_SKEW_MS = 60_000;
 
 // ⚠️ **小程序的 wx.request 不支持 PATCH**（方法白名单里根本没有）。
 // 这意味着 PostgREST 的 `PATCH /rest/v1/<table>` 这条更新路径在小程序端**用不了**，
@@ -96,9 +99,16 @@ async function refreshSession(): Promise<Session | null> {
         };
         setSession(next);
         return next;
-      } catch {
-        setSession(null);
-        return null;
+      } catch (error) {
+        // 只有 Supabase 明确认定 refresh token 无效时才退出登录。
+        // 网络抖动、429 或网关/上游 5xx 都是可恢复故障；清掉 session 会让用户在
+        // 地铁弱网下无缘无故掉登录，而且连离线缓存都进不去。
+        const err = error as ApiError;
+        if (err instanceof ApiError && (err.status === 400 || err.status === 401)) {
+          setSession(null);
+          return null;
+        }
+        throw error;
       } finally {
         refreshing = null;
       }
@@ -107,7 +117,24 @@ async function refreshSession(): Promise<Session | null> {
   return refreshing;
 }
 
-export function request<T>(path: string, opts: RequestOptions = {}): Promise<T> {
+function sessionNeedsRefresh(session: Session): boolean {
+  return Number.isFinite(session.expiresAt) && session.expiresAt <= Date.now() + TOKEN_REFRESH_SKEW_MS;
+}
+
+export async function request<T>(path: string, opts: RequestOptions = {}): Promise<T> {
+  // 旧实现只在业务请求收到 401 后才刷新。今日页首次加载会并发三个请求，
+  // 因而控制台固定先出现三条 401，再由单飞锁刷新并重放。现在在发请求前利用
+  // session 自带的 expiresAt 预刷新；并发调用仍共用同一个 refreshing Promise。
+  if (!opts.anonymous && !opts._retried) {
+    const current = getSession();
+    if (current && sessionNeedsRefresh(current)) {
+      const next = await refreshSession();
+      if (!next) {
+        throw new ApiError('unauthorized', 401, '登录已失效，请重新登录');
+      }
+    }
+  }
+
   const { method = 'GET', body, anonymous = false, timeout = TIMEOUT_MS } = opts;
   const session = anonymous ? null : getSession();
   const started = Date.now();

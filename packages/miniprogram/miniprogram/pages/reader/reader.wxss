@@ -1,25 +1,51 @@
-.hc-page { display: flex; flex-direction: column; height: 100vh; padding-top: 24rpx; padding-bottom: 0; }
+.hc-page { display: flex; flex-direction: column; min-height: 100vh; padding-top: 24rpx; padding-bottom: calc(env(safe-area-inset-bottom) + 150rpx); }
 
 /* —— R1 贴入 —— */
+.reader-head { display: flex; align-items: center; gap: 18rpx; padding: 10rpx 4rpx 26rpx; border-bottom: 2rpx solid var(--border); }
+.reader-icon { width: 54rpx; height: 54rpx; flex: none; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--brand-600); background: var(--st-captured-bg); font-size: 28rpx; }
+.reader-copy { flex: 1; min-width: 0; }
+.reader-title-row { display: flex; align-items: center; gap: 12rpx; }
+.reader-title { color: var(--text-1); font-size: 30rpx; font-weight: 900; }
+.reader-tag { padding: 3rpx 12rpx; border-radius: var(--r-sm); color: var(--brand-text); background: var(--st-captured-bg); font-size: 18rpx; font-weight: 800; }
+.reader-sub { display: block; margin-top: 3rpx; color: var(--text-3); font-size: 21rpx; }
+.form-label-row { display: flex; align-items: center; justify-content: space-between; margin: 30rpx 4rpx 12rpx; }
+.form-label { color: var(--text-2); font-size: 23rpx; font-weight: 900; }
+.form-note { color: var(--text-4); font-size: 20rpx; }
+.input-state { color: var(--brand-text); font-size: 20rpx; font-weight: 800; }
+.input-state.has-text { color: var(--ok-600); }
+.field-wrap { display: flex; align-items: center; height: 78rpx; padding: 0 22rpx; border-radius: var(--r-md); border: 2rpx solid var(--border-strong); background: var(--surface-sunk); }
+.field-icon { flex: none; margin-right: 12rpx; color: var(--text-4); font-size: 24rpx; }
+.field-wrap .field { flex: 1; min-width: 0; }
 .paste {
-  width: 100%; height: 46vh; padding: 28rpx;
-  border-radius: var(--r-lg); border: 2rpx solid var(--border-strong);
-  background: var(--surface); font-size: 27rpx; line-height: 1.8; color: var(--text-1);
+  width: 100%; height: 310rpx; padding: 24rpx 24rpx 50rpx;
+  border: 0; background: transparent; font-size: 25rpx; line-height: 1.65; color: var(--text-1);
 }
+.paste-wrap { overflow: hidden; border-radius: var(--r-lg); border: 2rpx solid var(--border-strong); background: var(--surface-sunk); }
 .ph { color: var(--text-4); }
-.counter { padding: 12rpx 8rpx; font-size: 20rpx; color: var(--text-4); }
+.counter { padding: 8rpx 24rpx 18rpx; font-size: 19rpx; color: var(--text-4); }
 .counter.is-warn { color: var(--warn-600); }
 .field {
-  width: 100%; height: 88rpx; padding: 0 24rpx; margin-bottom: 28rpx;
-  border-radius: var(--r-md); border: 2rpx solid var(--border-strong);
-  background: var(--surface); font-size: 26rpx; color: var(--text-1);
+  height: 76rpx; padding: 0; border: 0; background: transparent; font-size: 25rpx; color: var(--text-1);
 }
+.quick-actions { display: flex; gap: 16rpx; margin-top: 22rpx; }
+.quick-btn { padding: 13rpx 22rpx; border-radius: var(--r-full); border: 2rpx solid var(--border-strong); background: var(--surface); color: var(--text-2); font-size: 22rpx; font-weight: 800; box-shadow: var(--shadow-xs); }
+.quick-paste { color: var(--brand-text); }
+.why-card { margin-top: 24rpx; padding: 22rpx 24rpx; border-radius: var(--r-lg); border: 2rpx solid var(--border); background: rgba(250,245,255,.86); }
+.why-title { display: block; color: var(--brand-text); font-size: 22rpx; font-weight: 900; }
+.why-copy { display: block; margin-top: 8rpx; color: var(--text-3); font-size: 20rpx; line-height: 1.7; }
 .last {
   margin-top: 24rpx; padding: 24rpx; border-radius: var(--r-md);
   border: 2rpx dashed var(--border-strong);
   font-size: 22rpx; font-weight: 700; color: var(--brand-text);
 }
-.tip { margin-top: 24rpx; padding: 0 8rpx; font-size: 20rpx; color: var(--text-4); line-height: 1.8; }
+.reader-bottom { position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; padding: 22rpx 32rpx; padding-bottom: calc(env(safe-area-inset-bottom) + 22rpx); background: var(--surface); border-top: 2rpx solid var(--border); }
+.start-btn { height: 88rpx; font-size: 26rpx; }
+.start-btn[disabled], .start-btn.is-disabled {
+  color: #8aa0ba;
+  background: #e2e8f0;
+  box-shadow: none;
+  opacity: 1;
+}
 
 /* —— R2 阅读 —— */
 .readbar { display: flex; align-items: baseline; justify-content: space-between; padding: 0 4rpx 16rpx; }

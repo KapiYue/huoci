@@ -1,15 +1,16 @@
-// 自定义 tabBar。用它而不是 app.json 的原生 list，是为了跟原型的图标风格对齐
-// ——原生 tabBar 只吃 PNG，换一版图标就要重出六张图。
+// 自定义 tabBar。图标直接按 prototype 的 CartoonTabIcon SVG 落地。
 
-// `[09-03]` 五项。「词包」插在「查词」之前 —— 词包和查词都是「找词」，「我的」永远在最右。
-// ⚠️ 下标是各页面 onShow 里 setData({active:N}) 的依据，改顺序要一起改那五处。
+import { RELEASE_FEATURES } from '../config/release';
+
 const ITEMS = [
-  { path: '/pages/today/today', text: '今日', icon: '◷', iconOn: '◉' },
-  { path: '/pages/words/words', text: '我的生词', icon: '☰', iconOn: '▤' },
-  { path: '/pages/wordpacks/wordpacks', text: '词包', icon: '◇', iconOn: '◆' },
-  { path: '/pages/search/search', text: '查词', icon: '⌕', iconOn: '⌕' },
-  { path: '/pages/profile/profile', text: '我的', icon: '☺', iconOn: '☻' },
-] as const;
+  { path: '/pages/today/today', text: '今日', icon: '/assets/ui/tab-today.svg', iconOn: '/assets/ui/tab-today-on.svg' },
+  { path: '/pages/words/words', text: '我的生词', icon: '/assets/ui/tab-words.svg', iconOn: '/assets/ui/tab-words-on.svg' },
+  ...(RELEASE_FEATURES.wordPacks
+    ? [{ path: '/pages/wordpacks/wordpacks', text: '词包', icon: '/assets/ui/tab-pack.svg', iconOn: '/assets/ui/tab-pack-on.svg' }]
+    : []),
+  { path: '/pages/search/search', text: '查词', icon: '/assets/ui/tab-search.svg', iconOn: '/assets/ui/tab-search-on.svg' },
+  { path: '/pages/profile/profile', text: '我的', icon: '/assets/ui/tab-profile.svg', iconOn: '/assets/ui/tab-profile-on.svg' },
+];
 
 Component({
   data: {

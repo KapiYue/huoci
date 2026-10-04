@@ -8,5 +8,5 @@
       <text class="item-tick" wx:if="{{goal === item}}">✓</text>
     </view>
   </view>
-  <text class="foot-note">到期复习优先，新词按「目标 − 到期数」补。断更欠账单日上限是目标的 1.5 倍，不会一次性倾泻给你。</text>
+  <text class="foot-note">到期复习优先，新词按目标补充。每轮固定最多 20 个；积压会单独显示，不会一次性并入本轮。</text>
 </view>

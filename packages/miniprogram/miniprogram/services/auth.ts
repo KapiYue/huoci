@@ -64,9 +64,8 @@ export function getOpenid(): string | null {
 }
 
 /**
- * 路径一：微信一键登录。**S0 传空对象** —— §5.3 S0 要的是「一次点击」，
- * 插一个头像/昵称授权弹层就变成三次。昵称由网关兜底成 '微信用户'（T3），
- * 想改去「我的」（S8）。参数留着是为了 S8 那条路复用同一个函数。
+ * 路径一：微信快捷登录。S0 先按 React 原型收集用户选择的展示昵称，
+ * 再把昵称随真实 wx.login code 交给网关；头像仍由服务端/后续账号设置处理。
  */
 export async function loginWithWeChat(profile: {
   nickname?: string;
@@ -115,10 +114,9 @@ export async function attachOpenid(): Promise<void> {
 export function logout(): void {
   gw.setSession(null);
   store.remove(store.SK.OPENID);
-  store.remove(store.SK.PLAN_CACHE);
-  store.remove(store.SK.CARDS_CACHE);
-  store.remove(store.SK.HC_PROFILE);
-  // ⚠️ 故意不清 REVIEW_QUEUE：没补发的复习是用户真花时间做的，留着下次登录补
+  store.clearAccountData();
+  // ⚠️ 故意不清 REVIEW_QUEUE：条目已带 userId，下一账号不会补发；
+  // 原账号再登录时仍能继续。
 }
 
 export const isLoggedIn = gw.isLoggedIn;
