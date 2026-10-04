@@ -13,7 +13,6 @@
 import * as lookup from '../../services/lookup';
 import * as onboarding from '../../services/onboarding';
 import * as tracker from '../../services/tracker';
-import * as words from '../../services/words';
 import { EV } from '../../shared/events';
 import { ApiError } from '../../services/types';
 import type { LookupResult } from '../../services/lookup';
@@ -142,7 +141,6 @@ Page({
         source_domain: null,
         has_context: false,
       });
-      words.clearCache(); // 「我的生词」下次进去要能看见它
       void tracker.flush();
     } catch (e) {
       wx.showToast({ title: (e as ApiError).message || '加入失败', icon: 'none' });

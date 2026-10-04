@@ -11,6 +11,7 @@
 // 何况 wx.request 没有 PATCH，物理上也走不了 upsert）。
 
 import * as gw from './gateway';
+import * as words from './words';
 import { ApiError } from './types';
 import type { CijingWord } from '../shared/types';
 
@@ -88,7 +89,10 @@ export async function addWord(r: LookupResult, meta: CaptureMeta = LOOKUP_META):
       source_title: meta.sourceTitle,
     },
   });
-  return Array.isArray(res) ? (res[0] as CijingWord) : res;
+  const saved = Array.isArray(res) ? (res[0] as CijingWord) : res;
+  // 查词、阅读器等所有 capture 入口都走这里；缓存失效不能依赖每个页面各自记得做。
+  words.clearCache();
+  return saved;
 }
 
 /** 这个词是不是已经在我的活词里了。查完就知道按钮该显示哪一态。 */
