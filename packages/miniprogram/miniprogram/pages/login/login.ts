@@ -18,6 +18,7 @@ import * as theme from '../../services/theme';
 import { EV } from '../../shared/events';
 import { ApiError } from '../../services/types';
 import * as onboarding from '../../services/onboarding';
+import { PRIVACY_SECTIONS } from '../../services/privacy';
 import { RELEASE_FEATURES } from '../../config/release';
 
 /** 失败态文案（密码错误、网络失败都要有落点） */
@@ -41,6 +42,7 @@ Page({
     agreeNotice: false,
     showWeChatAuthSheet: false,
     legalModal: '' as '' | 'terms' | 'privacy',
+    privacySections: PRIVACY_SECTIONS,
     selectedAvatarId: 'cat',
     wechatNickname: '微信学习者',
 

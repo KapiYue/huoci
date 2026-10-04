@@ -120,6 +120,17 @@
 .dlg-sub { display: block; margin-top: 10rpx; font-size: 22rpx; color: var(--text-3); line-height: 1.6; }
 .dlg-err { display: block; margin-top: 16rpx; font-size: 22rpx; color: var(--danger-500); }
 
+.privacy-dialog { max-height: 78vh; display: flex; flex-direction: column; }
+.privacy-body { max-height: 54vh; margin-top: 18rpx; }
+.privacy-section { margin-bottom: 22rpx; }
+.privacy-title { display: block; font-size: 23rpx; font-weight: 800; color: var(--text-1); }
+.privacy-copy { display: block; margin-top: 8rpx; font-size: 21rpx; line-height: 1.75; color: var(--text-3); }
+.privacy-close {
+  flex: none; height: 78rpx; margin-top: 12rpx; border-radius: var(--r-md);
+  background: var(--brand-600); color: #fff; font-size: 24rpx; font-weight: 800;
+}
+.privacy-close::after { border: 0; }
+
 .opt {
   margin-top: 20rpx; padding: 24rpx; border-radius: var(--r-md);
   border: 2rpx solid var(--border); background: var(--surface-sunk);
