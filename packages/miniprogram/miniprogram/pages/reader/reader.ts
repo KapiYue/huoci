@@ -236,7 +236,6 @@ Page({
       at: Date.now(),
     });
     tracker.track(EV.READING_FINISHED, { captured: this.data.capturedCount });
-    wordsSvc.clearCache(); // 收了词，S6 与今日页的缓存都过期了
     this.setData({ stage: 'done' });
   },
 

@@ -157,18 +157,9 @@ Page({
 
     this.setData({ loading: true });
     try {
-      const mockSummary = words.localMockSummary();
       const [page, summary] = await Promise.all([
         words.fetchWords(this.serverFilter(), 0),
-        words.USING_LOCAL_MOCK
-          ? Promise.resolve({
-              data: {
-                total_words: mockSummary.total,
-                activated_count: mockSummary.activated,
-              },
-              stale: false,
-            })
-          : learning.fetchHomeSummary(),
+        learning.fetchHomeSummary(),
       ]);
       const rows = page.data.map(toRow);
       this.setData({
