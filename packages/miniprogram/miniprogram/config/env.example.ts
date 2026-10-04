@@ -20,6 +20,6 @@ export const ENV = {
    *  开通条件（历史规则）：累计独立访客 ≥ 1000 且小程序已认证。拿到后填这里，代码不用改。 */
   AD_UNIT_ID: '',
 
-  /** 打开后所有网关请求会在 console 打印耗时，用来测 T9 说的 p95 */
-  DEBUG_TIMING: true,
+  /** 仅本地性能排查时临时打开；发布基线必须保持关闭。 */
+  DEBUG_TIMING: false,
 } as const;

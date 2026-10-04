@@ -20,12 +20,6 @@ const PLAN_TTL = 5 * 60 * 1000;
 /** 产品裁决：每轮固定最多 20 张。daily_goal 和历史积压都不能放大本轮。 */
 export const STUDY_ROUND_LIMIT = 20;
 
-/** 只供真机验收积压排版；不改队列、不写库。 */
-export function backlogTestSummary(summary: HomeSummary, enabled: boolean): HomeSummary {
-  if (!enabled) return summary;
-  return { ...summary, due_count: 35, new_count: 8, new_available: Math.max(summary.new_available, 8) };
-}
-
 export interface HomeSummary {
   due_count: number;
   new_count: number;
@@ -139,12 +133,26 @@ function pronunciationUrl(value: string | null, term: string): string {
   return value || `https://dict.youdao.com/dictvoice?audio=${encodeURIComponent(term)}&type=2`;
 }
 
+/**
+ * 历史词数据的 parts 是 string[]，新查词链路写入的是对象数组。
+ * 展示层只取词性，不允许把对象隐式转成 "[object Object]"。
+ */
+function displayPartOfSpeech(parts: unknown): string {
+  if (!Array.isArray(parts) || parts.length === 0) return '';
+  const first = parts[0];
+  if (typeof first === 'string') return first;
+  if (!first || typeof first !== 'object') return '';
+  const part = first as Record<string, unknown>;
+  const value = part.partOfSpeech ?? part.part_of_speech ?? part.pos;
+  return typeof value === 'string' ? value : '';
+}
+
 export function toCard(row: QueueRow): StudyCard {
   return {
     wordId: row.id,
     term: row.term,
     phonetic: displayPhonetic(row.phonetic, row.term),
-    pos: Array.isArray(row.parts) && row.parts.length > 0 ? String(row.parts[0]) : '',
+    pos: displayPartOfSpeech(row.parts),
     meaning: row.custom_meaning || row.primary_meaning,
     // 底座词没有原句，正面只有拼写 + 音标，**不编造例句**（§5.4 S5）
     contextSentence: row.first_context,

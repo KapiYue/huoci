@@ -192,3 +192,4 @@
 .legal-section { display: block; margin-top: 22rpx; color: var(--text-1); font-size: 23rpx; font-weight: 800; }
 .legal-copy { display: block; margin-top: 8rpx; color: var(--text-3); font-size: 21rpx; line-height: 1.7; }
 .legal-close { width: 100%; height: 84rpx; margin-top: 26rpx; display: flex; align-items: center; justify-content: center; border-radius: 22rpx; background: linear-gradient(90deg,var(--brand-600),var(--indigo-600)); color: #fff; font-size: 24rpx; font-weight: 800; }
+.guest-entry { margin-top: 22rpx; text-align: center; }

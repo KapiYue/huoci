@@ -139,10 +139,15 @@ def _public_dictionary_fallback(payload: dict[str, Any]) -> dict[str, Any] | Non
         return None
 
     definition_text = parts[0]["meaning"].removeprefix("英文释义：")
+    pronunciation = ""
+    for tag in entry.get("tags") or []:
+        if isinstance(tag, str) and tag.startswith("pron:"):
+            pronunciation = tag.removeprefix("pron:").strip()
+            break
     return {
         "term": str(entry.get("word") or term),
         "lemma": str(entry.get("word") or term),
-        "phonetic": "",
+        "phonetic": f"/{pronunciation}/" if pronunciation else "",
         "parts": parts,
         "primaryMeaning": parts[0]["meaning"],
         "contextualMeaning": f"当前语境可参考：{definition_text}",
@@ -158,6 +163,16 @@ def _public_dictionary_fallback(payload: dict[str, Any]) -> dict[str, Any] | Non
             "licenses": [],
         },
     }
+
+
+@functions_bp.post("/dictionary-lookup")
+def public_dictionary_lookup():
+    """首发版游客查词：只查公开词典，不要求账号，不调用内容生成服务。"""
+    payload = flask_request.get_json(silent=True) or {}
+    result = _public_dictionary_fallback(payload)
+    if result is None:
+        return jsonify({"message": "词典中没有这个单词"}), 404
+    return jsonify({"data": result, "source": "public_dictionary"})
 
 
 def _should_use_lookup_fallback(status: int, data: Any) -> bool:

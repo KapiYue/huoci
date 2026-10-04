@@ -22,6 +22,35 @@ class FakeResponse:
 
 
 class FunctionsBlueprintTests(unittest.TestCase):
+    def test_public_dictionary_lookup_is_available_without_login(self):
+        app = Flask(__name__)
+        app.register_blueprint(functions.functions_bp)
+        result = {
+            "term": "apple",
+            "phonetic": "/AE1 P AH0 L/",
+            "parts": [{"partOfSpeech": "n", "meaning": "英文释义：fruit"}],
+            "primaryMeaning": "英文释义：fruit",
+        }
+        with patch.object(functions, "_public_dictionary_fallback", return_value=result):
+            response = app.test_client().post(
+                "/functions/v1/dictionary-lookup",
+                json={"word": "apple"},
+            )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.get_json()["data"]["term"], "apple")
+
+    def test_public_dictionary_lookup_returns_404_for_unknown_word(self):
+        app = Flask(__name__)
+        app.register_blueprint(functions.functions_bp)
+        with patch.object(functions, "_public_dictionary_fallback", return_value=None):
+            response = app.test_client().post(
+                "/functions/v1/dictionary-lookup",
+                json={"word": "notaword"},
+            )
+
+        self.assertEqual(response.status_code, 404)
+
     def test_dictionary_fallback_only_sends_the_word(self):
         rows = [{
             "word": "resilient",

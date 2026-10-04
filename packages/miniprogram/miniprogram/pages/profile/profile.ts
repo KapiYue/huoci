@@ -13,7 +13,6 @@ import * as profile from '../../services/profile';
 import * as onboarding from '../../services/onboarding';
 import * as tracker from '../../services/tracker';
 import * as words from '../../services/words';
-import * as membership from '../../services/membership';
 import * as prefs from '../../services/prefs';
 import * as theme from '../../services/theme';
 import { PRIVACY_SECTIONS } from '../../services/privacy';
@@ -38,9 +37,6 @@ Page({
     isBound: false,
     /** 微信登录的用户没绑过邮箱账号，才显示「绑定词鲸账号」 */
     canBind: true,
-    isVip: false,
-    credits: 0,
-    creditsNote: '',
     summary: learning.EMPTY_SUMMARY,
     learningCount: 0,
     dailyGoal: 20,
@@ -50,6 +46,7 @@ Page({
     cardModal: false,
     privacyModal: false,
     privacySections: PRIVACY_SECTIONS,
+    loadError: '',
     /** 绑定弹层 */
     binding: false,
     bindEmail: '',
@@ -59,6 +56,10 @@ Page({
   },
 
   onShow() {
+    if (!auth.isLoggedIn()) {
+      wx.navigateTo({ url: '/pages/login/login?back=1' });
+      return;
+    }
     if (onboarding.guard()) return;
     this.getTabBar?.()?.setData({ active: RELEASE_FEATURES.wordPacks ? 4 : 3 });
     theme.apply(this);
@@ -69,7 +70,6 @@ Page({
   /** 本地就有的东西先画出来，别等网络 */
   loadLocal() {
     const s = auth.getSession();
-    const m = RELEASE_FEATURES.aiQuota ? membership.ensureDailyFree() : membership.get();
     const p = prefs.get();
     this.setData({
       displayName: s ? s.displayName : '微信用户',
@@ -77,12 +77,6 @@ Page({
       shortId: s ? s.userId.slice(0, 8) : '—',
       isBound: s ? s.provider === 'password' : false,
       canBind: s ? s.provider === 'wechat' : true,
-      isVip: m.isVip,
-      credits: m.credits,
-      creditsNote:
-        m.credits > 0
-          ? `还能进行约 ${m.credits} 轮 AI 场景对话或短文生成`
-          : 'AI 场景暂停；生词、复习、查词、阅读、词包、排行榜完全不受影响',
       cardMode: p.studyCardMode,
       cardModeLabel: CARD_MODE_LABEL[p.studyCardMode],
       hideFromLeaderboard: p.hideFromLeaderboard,
@@ -90,23 +84,27 @@ Page({
   },
 
   async load() {
-    const [summary, p] = await Promise.all([learning.fetchHomeSummary(), profile.fetchProfile()]);
-    this.setData({
-      summary: summary.data,
-      // ⚠️ 这是「还没激活的词」，**不等于**「正在学的词」——后者要 repetitions>0，
-      // 服务端概览没给这个数。别把标签写成「学习中」，那是两个口径。
-      learningCount: Math.max(0, summary.data.total_words - summary.data.activated_count),
-      dailyGoal: p.daily_goal,
-    });
+    this.setData({ loadError: '' });
+    try {
+      const [summary, p] = await Promise.all([learning.fetchHomeSummary(), profile.fetchProfile()]);
+      this.setData({
+        summary: summary.data,
+        // ⚠️ 这是「还没激活的词」，**不等于**「正在学的词」——后者要 repetitions>0，
+        // 服务端概览没给这个数。别把标签写成「学习中」，那是两个口径。
+        learningCount: Math.max(0, summary.data.total_words - summary.data.activated_count),
+        dailyGoal: p.daily_goal,
+      });
+    } catch (e) {
+      this.setData({ loadError: (e as Error).message || '学习数据加载失败' });
+    }
   },
+
+  retryLoad() { void this.load(); },
 
   // ---------------- 跳转 ----------------
 
-  openVip() { wx.navigateTo({ url: '/pages/vip/vip' }); },
   openLeaderboard() { wx.navigateTo({ url: '/pages/leaderboard/leaderboard' }); },
-  openAiScene() { wx.navigateTo({ url: '/pages/aiscene/aiscene' }); },
   openReader() { wx.navigateTo({ url: '/pages/reader/reader' }); },
-  openSettings() { wx.navigateTo({ url: '/pages/settings/settings' }); },
   openLicense() { wx.navigateTo({ url: '/pages/license/license' }); },
 
   openAbout() {
@@ -225,7 +223,7 @@ Page({
         if (!res.confirm) return;
         auth.logout();
         words.clearCache();
-        wx.reLaunch({ url: '/pages/login/login' });
+        wx.reLaunch({ url: '/pages/search/search' });
       },
     });
   },

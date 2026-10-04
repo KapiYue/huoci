@@ -41,17 +41,13 @@
         </view>
       </view>
       <view class="acct-grid">
-        <view class="acct-cell" wx:if="{{releaseFeatures.aiQuota}}">
+        <view class="acct-cell">
           <text class="acct-num hc-mono c-purple">{{summary.activated_count}}</text>
           <text class="acct-cell-label">已激活活词</text>
         </view>
         <view class="acct-cell">
           <text class="acct-num hc-mono c-amber">{{summary.streak_days}} 天</text>
           <text class="acct-cell-label">连续打卡</text>
-        </view>
-        <view class="acct-cell">
-          <text class="acct-num hc-mono c-blue">{{credits}}</text>
-          <text class="acct-cell-label">AI 额度（次）</text>
         </view>
       </view>
     </view>
@@ -121,6 +117,8 @@
       </view>
     </view>
     <text class="agree-warn" wx:if="{{agreeNotice}}">请先勾选同意协议后再继续登录</text>
+
+    <view class="ghost-btn guest-entry" bindtap="continueAsGuest">暂不登录，继续查词</view>
 
   </block>
 

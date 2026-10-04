@@ -17,7 +17,7 @@ function makeWord(payload) {
     lemma: payload.lemma,
     phonetic: payload.phonetic || null,
     audio_url: payload.audio_url || null,
-    parts: (payload.parts || []).map((part) => part.partOfSpeech || ''),
+    parts: payload.parts || [],
     primary_meaning: payload.primary_meaning,
     contextual_meaning: null,
     english_definition: payload.english_definition || null,
@@ -168,7 +168,9 @@ test('查词收词后，重进仍从服务端读取同一 wordId 并交给复习
   const queue = await learning.fetchStudyQueue();
 
   assert.equal(listed.data[0].wordId, saved.id);
+  assert.equal(listed.data[0].pos, 'n.');
   assert.equal(queue.data[0].wordId, saved.id);
+  assert.equal(queue.data[0].pos, 'n.');
   learning.submitReview(queue.data[0], 2, 800);
   await learning.flushReviews();
 

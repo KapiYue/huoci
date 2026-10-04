@@ -21,6 +21,7 @@ import type { WordFilter } from '../../services/words';
 import type { StudyCard } from '../../shared/types';
 import { wordStatus } from '../../shared/wordStatus';
 import * as theme from '../../services/theme';
+import * as auth from '../../services/auth';
 
 /** 界面上的四个 tab。`server` 是它实际打到哪个 RPC 筛选 */
 type UiFilter = 'all' | 'recent' | 'due' | 'activated';
@@ -79,6 +80,7 @@ Page({
     hasMore: true,
     stale: false,
     ready: false,
+    error: '',
     /** 词详情抽屉（原型的 Word Detail Drawer） */
     detail: null as Row | null,
     playingId: '',
@@ -86,6 +88,10 @@ Page({
 
   onShow() {
     theme.apply(this);
+    if (!auth.isLoggedIn()) {
+      wx.navigateTo({ url: '/pages/login/login?back=1' });
+      return;
+    }
     if (onboarding.guard()) return;
     this.getTabBar?.()?.setData({ active: 1 });
     void this.reload();
@@ -155,7 +161,7 @@ Page({
       this.setData({ rows, view: this.computeView(rows), ready: true });
     }
 
-    this.setData({ loading: true });
+    this.setData({ loading: true, error: '' });
     try {
       const [page, summary] = await Promise.all([
         words.fetchWords(this.serverFilter(), 0),
@@ -172,11 +178,18 @@ Page({
         ready: true,
       });
     } catch (e) {
-      wx.showToast({ title: (e as Error).message || '加载失败', icon: 'none' });
-      this.setData({ ready: true });
+      if (this.data.rows.length === 0) {
+        this.setData({ ready: false, error: (e as Error).message || '生词加载失败，请重试' });
+      } else {
+        this.setData({ stale: true });
+      }
     } finally {
       this.setData({ loading: false });
     }
+  },
+
+  retryLoad() {
+    void this.reload();
   },
 
   async loadMore() {

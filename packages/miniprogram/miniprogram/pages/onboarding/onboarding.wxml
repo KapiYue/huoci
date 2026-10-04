@@ -57,7 +57,7 @@
 
     <view class="bottom-action">
       <view class="primary" bindtap="finishSelection" hover-class="tap-down" role="button">
-        <text>生成我的今日活词计划</text><text class="arrow">→</text>
+        <text>开始我的今日活词计划</text><text class="arrow">→</text>
       </view>
     </view>
   </block>

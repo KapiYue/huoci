@@ -1,7 +1,4 @@
-<!-- ⑤ 我的。还原对象：`docs/prototype/src/components/ProfileTab.tsx`。
-     09-03 裁决：**原型为准**。会员状态卡 / 排行榜 / AI 场景 / 阅读器 / 学习卡片模式 /
-     主题三档 / 不参与排行榜开关，都是按原型加进来的。
-     仍然不加：App 下载引导（二维码、按钮、跳转都算） · banner 广告位 —— 那两条是审核红线。 -->
+<!-- ⑤ 我的。个人数据与设置，仅登录后可访问。 -->
 <scroll-view class="hc-page hc-immersive-page {{themeClass}}" scroll-y>
 
   <!-- 用户头条 -->
@@ -19,23 +16,9 @@
         <text class="banner-id hc-mono">ID: {{shortId}}</text>
       </view>
     </view>
-    <view class="topup" wx:if="{{releaseFeatures.aiQuota}}" bindtap="openVip">AI 额度</view>
   </view>
 
-  <!-- M1 · AI Credits 状态卡。入口只有这一处 + 今日页顶部 -->
-  <view class="credits {{credits > 0 ? '' : 'is-zero'}}" wx:if="{{releaseFeatures.aiQuota}}" bindtap="openVip">
-    <view class="credits-left">
-      <view class="credits-icon"><image src="/assets/ui/icon-coins.svg" /></view>
-      <view>
-        <view class="credits-row">
-          <text class="credits-num">AI 额度：{{credits}} 次</text>
-          <text class="credits-go">额度从哪来 →</text>
-        </view>
-        <text class="credits-note">{{creditsNote}}</text>
-      </view>
-    </view>
-    <text class="chev">›</text>
-  </view>
+  <view class="offline" wx:if="{{loadError}}" bindtap="retryLoad">{{loadError}}，点这里重试</view>
 
   <!-- 我的学习数据 -->
   <view class="stats hc-card">
@@ -67,15 +50,6 @@
       <text class="chev">›</text>
     </view>
 
-    <view class="item" wx:if="{{releaseFeatures.aiPractice}}" bindtap="openAiScene">
-      <view class="item-icon ic-purple"><image src="/assets/ui/icon-bot.svg" /></view>
-      <view class="item-text">
-        <text class="item-title">AI 真实场景练习</text>
-        <text class="item-sub">将待复习词融入站会 / 邮件场景进行对话</text>
-      </view>
-      <text class="chev">›</text>
-    </view>
-
     <view class="item" bindtap="openReader">
       <view class="item-icon ic-blue"><image src="/assets/ui/icon-book.svg" /></view>
       <view class="item-text">
@@ -94,7 +68,7 @@
       <text class="chev">›</text>
     </view>
 
-    <view class="item is-static" wx:if="{{releaseFeatures.leaderboard}}">
+    <view class="item is-static">
       <view class="item-text">
         <text class="item-title">小程序外观主题</text>
         <text class="item-sub">默认跟随系统，支持柔粉浅色与夜间深色</text>
@@ -106,7 +80,7 @@
       </view>
     </view>
 
-    <view class="item is-static">
+    <view class="item is-static" wx:if="{{releaseFeatures.leaderboard}}">
       <view class="item-text">
         <text class="item-title">不参与排行榜</text>
         <text class="item-sub">开启后自己不上榜，也不展示他人排行</text>
@@ -154,7 +128,7 @@
       <view class="item-icon ic-rose"><image src="/assets/ui/icon-logout.svg" /></view>
       <view class="item-text">
         <text class="item-title is-danger-text">退出登录</text>
-        <text class="item-sub">退出当前账号并回到登录页</text>
+        <text class="item-sub">退出当前账号并回到游客查词</text>
       </view>
       <text class="chev">›</text>
     </view>

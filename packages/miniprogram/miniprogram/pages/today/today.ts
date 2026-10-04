@@ -14,15 +14,12 @@ import * as learning from '../../services/learning';
 import * as wordsSvc from '../../services/words';
 import * as auth from '../../services/auth';
 import * as tracker from '../../services/tracker';
-import * as membership from '../../services/membership';
 import { EV } from '../../shared/events';
 import { wordStatus } from '../../shared/wordStatus';
 import type { WordStatus } from '../../shared/wordStatus';
 import type { StudyCard } from '../../shared/types';
 import * as onboarding from '../../services/onboarding';
 import * as theme from '../../services/theme';
-import * as prefs from '../../services/prefs';
-import { RELEASE_FEATURES } from '../../config/release';
 
 const STATUS_LABEL: Record<WordStatus, { label: string; badge: string }> = {
   captured: { label: '刚收进', badge: '📥' },
@@ -53,21 +50,20 @@ function greetingText(): string {
 Page({
   data: {
     themeClass: '',
-    releaseFeatures: RELEASE_FEATURES,
     summary: learning.EMPTY_SUMMARY,
     recent: [] as RecentItem[],
     total: 0,
     backlogTotal: 0,
     hasBacklog: false,
-    backlogTestMode: prefs.TEMP_SHOW_BACKLOG_TEST,
-    allowCardModeReplay: prefs.TEMP_ALLOW_CARD_MODE_REPLAY,
+    loading: true,
+    ready: false,
+    error: '',
     stale: false,
     pending: 0,
     refreshing: false,
     mascotMessage: '今天还剩几个待复习词，坚持一下就好 🔥',
     displayName: '微信用户',
     avatarUrl: '',
-    credits: 0,
     greeting: greetingText(),
     weekDots: WEEK_LABELS.map((label) => ({ label, on: false })),
     miniTaskLeft: 3,
@@ -83,7 +79,7 @@ Page({
     // 顺序不能反：先看有没有登录，再看首启做没做完。
     // 反过来会把「没登录」的人送进首启，做完 40 秒再告诉他要登录。
     if (!auth.isLoggedIn()) {
-      wx.reLaunch({ url: '/pages/login/login' });
+      wx.navigateTo({ url: '/pages/login/login?back=1' });
       return;
     }
     if (onboarding.guard()) return;
@@ -127,13 +123,9 @@ Page({
   /** 头像 / 昵称 / 会员态。全是本地已有的东西，不发请求，所以能先于 load() 画出来 */
   loadIdentity() {
     const s = auth.getSession();
-    // 每天首次进来把额度补足到保底值。放这里而不是只放 app.onLaunch：
-    // 小程序常驻后台好几天，onLaunch 可能一次都不再触发
-    const m = RELEASE_FEATURES.aiQuota ? membership.ensureDailyFree() : membership.get();
     this.setData({
       displayName: s ? s.displayName : '微信用户',
       avatarUrl: s && s.avatarUrl ? s.avatarUrl : '',
-      credits: m.credits,
       greeting: greetingText(),
     });
   },
@@ -147,6 +139,7 @@ Page({
   },
 
   async load() {
+    this.setData({ loading: true, error: '' });
     try {
       // 「最近遇到的词」走 S6 的 recent 筛选，**不是队列的前 3 张卡**：
       // 队列答的是「今天要学什么」，这一块答的是「我最近撞见了什么」——后者才是来源行的兑现处。
@@ -163,17 +156,11 @@ Page({
         return { ...c, status: st, statusLabel: STATUS_LABEL[st].label, badge: STATUS_LABEL[st].badge };
       });
 
-      const displaySummary = learning.backlogTestSummary(summary.data, prefs.TEMP_SHOW_BACKLOG_TEST);
+      const displaySummary = summary.data;
       const round = learning.studyRoundInfo(displaySummary, queue.data.length);
       const total = round.roundCount;
       const streak = summary.data.streak_days;
 
-      // 连续学习到里程碑就发额度。每个里程碑只发一次（判据在 membership 里）。
-      // ⚠️ 这是**陈述句的延伸，不是打卡奖励**：断了不补发、不弹「别灰心」、不放火苗。
-      const bonus = RELEASE_FEATURES.aiQuota ? membership.claimStreakBonus(streak) : 0;
-      if (bonus > 0) {
-        wx.showToast({ title: `连续学习 ${streak} 天，+${bonus} 次 AI 额度`, icon: 'none', duration: 2200 });
-      }
       this.setData({
         summary: displaySummary,
         recent,
@@ -183,10 +170,10 @@ Page({
         stale: summary.stale || queue.stale,
         pending: learning.pendingReviews(),
         weekDots: WEEK_LABELS.map((label, i) => ({ label, on: i < streak })),
-        credits: membership.get().credits,
         // 三件事：把今天的队列过一遍 / 读一篇文章 / 查一个词。
         // 后两件没有「今天做没做过」的记录，所以只有第一件会真的减 —— 不假装追踪。
         miniTaskLeft: summary.data.reviewed_today > 0 ? 2 : 3,
+        ready: true,
         mascotMessage:
           total === 0
             ? '今天的队列已经清空了，休息一下，明天见 🌙'
@@ -195,12 +182,18 @@ Page({
               : `本轮有 ${round.roundCount} 个词，坚持 ${streak} 天啦 🔥`,
       });
     } catch (e) {
-      wx.showToast({ title: (e as Error).message || '加载失败', icon: 'none' });
+      this.setData({ error: (e as Error).message || '加载失败，请重试' });
+    } finally {
+      this.setData({ loading: false });
     }
   },
 
+  retryLoad() {
+    void this.load();
+  },
+
   startStudy() {
-    if (this.data.total === 0 && !this.data.allowCardModeReplay) return;
+    if (this.data.total === 0) return;
     if (this.data.total > 0) {
       tracker.track(EV.STUDY_SESSION_START, {
         due_count: this.data.summary.due_count,
@@ -220,11 +213,6 @@ Page({
 
   openProfile() {
     wx.switchTab({ url: '/pages/profile/profile' });
-  },
-
-  /** AI 额度页。`[09-03]` 不卖 Credits 之后这里不再是「充值」，是「额度从哪来」 */
-  openVip() {
-    wx.navigateTo({ url: '/pages/vip/vip' });
   },
 
   openReader() {

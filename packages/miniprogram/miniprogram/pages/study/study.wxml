@@ -2,17 +2,27 @@
 <view class="study {{themeClass}}">
 
   <!-- 顶部进度 -->
-  <view class="topbar" wx:if="{{!done}}">
+  <view class="topbar" wx:if="{{!done && !loading && !error}}">
     <view class="progress">
       <text class="progress-text hc-mono">{{index + 1}} / {{queue.length}}</text>
-      <view class="bar"><view class="bar-fill" style="width:{{percent}}%"></view></view>
+      <progress class="bar" percent="{{percent}}" stroke-width="5" activeColor="#9333ea" backgroundColor="#ede9fe" />
     </view>
     <view class="hc-badge st-{{card.status}}">{{card.badge}} {{card.statusLabel}}</view>
     <view class="close" bindtap="back" aria-label="关闭">×</view>
   </view>
 
+  <view class="finish" wx:if="{{loading}}">
+    <text class="finish-title">正在准备学习队列…</text>
+  </view>
+
+  <view class="finish" wx:elif="{{error}}">
+    <text class="finish-title">学习队列没有加载成功</text>
+    <text class="finish-sub">{{error}}</text>
+    <button class="hc-primary-btn finish-btn" bindtap="retryLoad">重新加载</button>
+  </view>
+
   <!-- 卡片 -->
-  <view class="card hc-card" wx:if="{{!done}}" bindtap="tapCard">
+  <view class="card hc-card" wx:if="{{!done && !loading && !error && card}}" bindtap="tapCard">
     <view class="card-body">
       <!-- 语境优先：正面直接给原句、把词挖空。底座词没有 cloze，自动落到下面的 classic 分支 -->
       <block wx:if="{{cardMode === 'context' && card.cloze && !revealed}}">
@@ -66,9 +76,8 @@
   <!-- 完成页 -->
   <view class="finish" wx:if="{{done}}">
     <view class="finish-mark">✓</view>
-    <text class="finish-title">{{isModeReplay ? '卡片模式测试完成！' : '今日复习完成！'}}</text>
-    <text class="finish-sub" wx:if="{{isModeReplay}}">本次仅重放测试卡片，没有改变真实学习进度</text>
-    <text class="finish-sub" wx:else>完成 {{reviewed}} 个词的激活循环<text wx:if="{{activated > 0}}">，新激活 {{activated}} 个活词</text></text>
+    <text class="finish-title">今日复习完成！</text>
+    <text class="finish-sub">完成 {{reviewed}} 个词的激活循环<text wx:if="{{activated > 0}}">，新激活 {{activated}} 个活词</text></text>
 
     <view class="finish-stats">
       <view class="fs hc-card">
@@ -95,7 +104,7 @@
   </view>
 
   <!-- 空队列 -->
-  <view class="finish" wx:if="{{!done && queue.length === 0 && !loading}}">
+  <view class="finish" wx:if="{{!done && queue.length === 0 && !loading && !error}}">
     <view class="finish-mark">🌙</view>
     <text class="finish-title">今天没有要学的了</text>
     <text class="finish-sub">明天这个时候，到期的词会自己排好队等你</text>

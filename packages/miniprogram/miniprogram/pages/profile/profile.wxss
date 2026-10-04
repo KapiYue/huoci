@@ -157,3 +157,12 @@
   border-radius: var(--r-md); background: var(--brand-600); color: #fff;
   font-size: 26rpx; font-weight: 800;
 }
+.offline {
+  margin: 16rpx 24rpx 0;
+  padding: 18rpx 24rpx;
+  border-radius: var(--r-sm);
+  background: rgba(245, 158, 11, 0.12);
+  color: var(--warn-600);
+  font-size: 22rpx;
+  text-align: center;
+}

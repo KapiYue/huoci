@@ -29,6 +29,16 @@
 
   <view class="offline" wx:if="{{stale}}">当前离线，展示的是上次的数据</view>
 
+  <view class="empty hc-card" wx:if="{{loading && !ready}}">
+    <text class="empty-title">正在加载你的生词…</text>
+  </view>
+
+  <view class="empty hc-card" wx:elif="{{error && !ready}}">
+    <text class="empty-title">生词没有加载成功</text>
+    <text class="empty-sub">{{error}}</text>
+    <view class="empty-btn" bindtap="retryLoad">重新加载</view>
+  </view>
+
   <!-- 空态：引导指向阅读器，**不是**「装插件」 -->
   <block wx:if="{{ready && view.length === 0}}">
     <view class="empty hc-card" wx:if="{{query}}">

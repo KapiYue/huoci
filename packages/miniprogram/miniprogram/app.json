@@ -1,19 +1,13 @@
 {
   "pages": [
+    "pages/search/search",
     "pages/login/login",
     "pages/onboarding/onboarding",
     "pages/today/today",
     "pages/study/study",
     "pages/words/words",
-    "pages/search/search",
     "pages/profile/profile",
-    "pages/settings/settings",
     "pages/license/license",
-    "pages/vip/vip",
-    "pages/wordpacks/wordpacks",
-    "pages/packdetail/packdetail",
-    "pages/leaderboard/leaderboard",
-    "pages/aiscene/aiscene",
     "pages/reader/reader"
   ],
   "window": {

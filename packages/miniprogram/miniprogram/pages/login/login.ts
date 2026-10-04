@@ -12,14 +12,12 @@ import * as auth from '../../services/auth';
 import { select } from '../../services/gateway';
 import * as tracker from '../../services/tracker';
 import * as learning from '../../services/learning';
-import * as membership from '../../services/membership';
 import * as words from '../../services/words';
 import * as theme from '../../services/theme';
 import { EV } from '../../shared/events';
 import { ApiError } from '../../services/types';
 import * as onboarding from '../../services/onboarding';
 import { PRIVACY_SECTIONS } from '../../services/privacy';
-import { RELEASE_FEATURES } from '../../config/release';
 
 /** 失败态文案（密码错误、网络失败都要有落点） */
 function explain(e: unknown, wrongCredential: string): string {
@@ -32,13 +30,13 @@ function explain(e: unknown, wrongCredential: string): string {
 Page({
   data: {
     themeClass: '',
-    releaseFeatures: RELEASE_FEATURES,
     tab: 'wechat' as 'wechat' | 'cijing',
     loading: false,
     error: '',
     email: '',
     password: '',
-    agreed: true,
+    // 合规要求：协议不得默认勾选，必须由用户主动选择。
+    agreed: false,
     agreeNotice: false,
     showWeChatAuthSheet: false,
     legalModal: '' as '' | 'terms' | 'privacy',
@@ -54,16 +52,18 @@ Page({
     shortId: '',
     isBound: false,
     summary: learning.EMPTY_SUMMARY,
-    credits: 0,
     mascotMessage: '欢迎来到活词！登录后即可开启云端实时同步，跨端保存生词与激活进度。',
   },
 
   /** 登录成功后要跳回的地址（收到分享的人从这里来） */
   _redirect: '',
+  /** 从游客操作进入登录页时，成功后退回并保留当前查询或阅读现场。 */
+  _backAfterLogin: false,
 
   onLoad(query: Record<string, string | undefined>) {
     tracker.track(EV.APP_OPEN, { page: 'login' });
     this._redirect = query.redirect ? decodeURIComponent(query.redirect) : '';
+    this._backAfterLogin = query.back === '1';
 
     const s = auth.getSession();
     // 从「我的 → 登录/账号管理」进来时是 State A；正常未登录进来是 State B
@@ -77,7 +77,6 @@ Page({
         shortId: s.userId.slice(0, 8),
         isBound: s.provider === 'password',
         email: s.provider === 'password' && s.email ? s.email : '',
-        agreed: true, // 已经登录过就是已经同意过，不用再勾一次
         mascotMessage: `${s.displayName}，欢迎回来！你的学习进度与复习曲线已在云端实时同步。`,
       });
       void this.loadStats();
@@ -90,7 +89,7 @@ Page({
 
   async loadStats() {
     const summary = await learning.fetchHomeSummary();
-    this.setData({ summary: summary.data, credits: membership.get().credits });
+    this.setData({ summary: summary.data });
   },
 
   switchTab(e: WechatMiniprogram.BaseEvent) {
@@ -153,8 +152,9 @@ Page({
       tracker.track(EV.LOGIN_SUCCESS, { provider: 'wechat' });
       wx.setStorageSync('hc.login.celebrate', Date.now());
       this.setData({ showWeChatAuthSheet: false });
-      // 新用户去首启；已做过首启的（重装、换设备）直接进今日
-      this.go(await this.needsOnboarding());
+      // 游客主动触发登录时先回原操作现场，不在中间插入首启流程。
+      if (this._backAfterLogin || this._redirect) this.go(false);
+      else this.go(await this.needsOnboarding());
     } catch (e) {
       this.setData({ error: explain(e, '微信登录没通过，请重试') });
     } finally {
@@ -201,6 +201,11 @@ Page({
   },
 
   go(toOnboarding: boolean) {
+    if (this._backAfterLogin) {
+      this._backAfterLogin = false;
+      wx.navigateBack({ fail: () => wx.switchTab({ url: '/pages/search/search' }) });
+      return;
+    }
     if (toOnboarding) {
       // redirectTo 而不是 navigateTo：首启做完之后不该能「后退」回登录页
       wx.redirectTo({ url: '/pages/onboarding/onboarding' });
@@ -221,8 +226,13 @@ Page({
     wx.switchTab({ url: '/pages/today/today' });
   },
 
+  continueAsGuest() {
+    wx.switchTab({ url: '/pages/search/search' });
+  },
+
   startSwitch() {
-    this.setData({ switching: true, tab: 'wechat', error: '', password: '' });
+    // 切换账号会重新发起登录，因此也要求用户本次主动确认协议。
+    this.setData({ switching: true, tab: 'wechat', error: '', password: '', agreed: false, agreeNotice: false });
   },
 
   cancelSwitch() {
