@@ -10,8 +10,8 @@ npm run sync:shared -w @huoci/miniprogram   # 把 packages/shared 同步进来�
 
 1. 微信开发者工具 → 导入项目 → 目录选 `packages/miniprogram`
 2. 把 `project.config.json` 的 `appid` 换成真实 AppID
-3. 复制 `miniprogram/config/env.example.ts` → `miniprogram/config/env.ts`，填网关地址
-4. 详情 → 本地设置 → 勾上「**不校验合法域名**」（开发期必需，见`design.md` §12.1 T4）
+3. 复制 `miniprogram/config/env.example.ts` → `miniprogram/config/env.ts`，保持生产网关为 `https://api.joy-coder.cn`
+4. 详情 → 本地设置 → 确认「**不校验合法域名**」未勾选；共享工程配置已开启合法域名校验
 
 ## 目录
 
