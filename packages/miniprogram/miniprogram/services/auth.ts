@@ -5,9 +5,7 @@
 //                   → service_role 查/建 auth user（按 openid 派生服务端密码）→ 原生 session
 //   [我有词鲸账号]  邮箱 + 密码，直打 /auth/v1/token?grant_type=password，零后端开发
 //
-// ⚠️ **无论走哪条路径都要先 wx.login 拿 openid 并存下**（§5.3 的红字）。
-//    msgSecCheck v2 必传 openid；邮箱登录的老用户若没走过 wx.login，网关手里没有 openid，
-//    一调 AI 内容就炸。这里用 attachOpenid() 兜住，**极易漏，别删**。
+// 两条登录路径都记录微信 openid，保证账号身份映射完整。
 
 import * as gw from './gateway';
 import * as store from './storage';
@@ -92,14 +90,14 @@ export async function loginWithPassword(email: string, password: string): Promis
   });
   const session = toSession(res, 'password');
   gw.setSession(session);
-  // 邮箱路径同样要把 openid 挂上去，否则 msgSecCheck 没得用
+  // 邮箱路径同样补齐微信身份映射。
   await attachOpenid();
   return session;
 }
 
 /**
  * 把当前微信 openid 绑到已登录的 auth user 上（写 hc_wechat_identities）。
- * 失败**不抛**——它不该挡住登录，只该让 AI 相关功能在用到时报错。
+ * 失败不抛：补充微信身份映射不应阻断邮箱登录。
  */
 export async function attachOpenid(): Promise<void> {
   try {
@@ -107,7 +105,7 @@ export async function attachOpenid(): Promise<void> {
     const res = await gw.wxApi<{ openid: string }>('/attach', { code });
     store.write(store.SK.OPENID, res.openid);
   } catch (e) {
-    console.warn('[auth] attachOpenid 失败，AI 内容审核会不可用', e);
+    console.warn('[auth] attachOpenid 失败，微信身份映射暂未补齐', e);
   }
 }
 

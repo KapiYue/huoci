@@ -1,11 +1,7 @@
 // ④ 查词的数据层。`design.md` §5.4 S7。
 //
-// 查词复用词鲸的 Edge Function `lookup-word`（入参 `{word, context?, sentence?}`）。
-// **全量词典永不下发**（§13.2）——本地只有 4,553 词的底座拼写表，没有释义。
-//
-// ⚠️ 路径走 `/functions/v1/*`，nginx 把它转给本机 Flask 而**不是**直通 Supabase：
-// §12.4 第 5 条要求 AI 返回的文本必须过 `msgSecCheck`，那一步在网关做。
-// 详见 `packages/gateway/nginx/huoci.conf` 与 `wx_blueprint.py` 的 /functions/v1 路由。
+// 首发审核版只提供公开词典信息查询，不调用内容生成服务。
+// **全量词典永不下发**（§13.2）——客户端只向网关提交单个英文词。
 //
 // 加入生词走词鲸的 `save_word(p_payload jsonb)` RPC（**不是**裸 REST，§12.4 第 1 条；
 // 何况 wx.request 没有 PATCH，物理上也走不了 upsert）。
@@ -15,7 +11,7 @@ import * as words from './words';
 import { ApiError } from './types';
 import type { CijingWord } from '../shared/types';
 
-/** lookup-word 的返回体，字段名逐字对齐那个 Edge Function 的 LookupResult */
+/** 公开词典查询的统一返回体。 */
 export interface LookupResult {
   term: string;
   lemma: string;
@@ -43,10 +39,11 @@ export async function lookup(word: string): Promise<LookupResult> {
   if (!WORD_RE.test(term)) {
     throw new ApiError('client', 400, '只能查一个英文单词');
   }
-  const res = await gw.request<{ data: LookupResult }>('/functions/v1/lookup-word', {
+  const res = await gw.request<{ data: LookupResult }>('/functions/v1/dictionary-lookup', {
     method: 'POST',
     body: { word: term },
-    timeout: 30000, // 词典未命中时要过一次 AI，比普通请求慢
+    anonymous: true,
+    timeout: 10000,
   });
   return res.data;
 }
@@ -64,12 +61,11 @@ export interface CaptureMeta {
   sourceUrl?: string | null;
 }
 
-/** 查词页的默认来源。阅读器与 AI 场景各自传自己的（它们是 capture 的另外两个来源） */
+/** 查词页的默认来源。阅读器会传入自己的来源与原句。 */
 export const LOOKUP_META: CaptureMeta = { sourceTitle: '查词添加' };
 
 /**
- * 加入我的活词。三个 capture 来源（查词 / 阅读器 / AI 场景）共用这一个函数，
- * 差别只在 `meta` —— 结构同构是 §9.2 要求的。
+ * 加入我的活词。查词与阅读器共用这一个函数，差别只在 `meta`。
  */
 export async function addWord(r: LookupResult, meta: CaptureMeta = LOOKUP_META): Promise<CijingWord> {
   const res = await gw.rpc<CijingWord | CijingWord[]>('save_word', {

@@ -27,6 +27,14 @@ test('两个隐私政策入口共用同一事实来源', () => {
   assert.match(read('services/privacy.ts'), /功能使用事件/);
 });
 
+test('登录协议默认不勾选，登录前必须由用户主动同意', () => {
+  const login = read('pages/login/login.ts');
+  assert.match(login, /agreed:\s*false/);
+  assert.doesNotMatch(login, /agreed:\s*true/);
+  assert.match(login, /showWeChatLogin\(\)[\s\S]*?requireAgreement\(\)/);
+  assert.match(login, /loginWithPassword\(\)[\s\S]*?requireAgreement\(\)/);
+});
+
 test('首发包没有未审计的隐私读取 API', () => {
   const source = walk(root)
     .filter((file) => /\.(?:ts|wxml)$/.test(file) && !file.endsWith('.generated.ts'))

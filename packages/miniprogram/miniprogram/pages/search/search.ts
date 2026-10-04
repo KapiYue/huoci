@@ -11,7 +11,7 @@
 //   2. 加入后按钮变已加入态，**不要弹「加入成功」的模态框**
 
 import * as lookup from '../../services/lookup';
-import * as onboarding from '../../services/onboarding';
+import * as auth from '../../services/auth';
 import * as tracker from '../../services/tracker';
 import { EV } from '../../shared/events';
 import { ApiError } from '../../services/types';
@@ -47,7 +47,6 @@ Page({
 
   onShow() {
     theme.apply(this);
-    if (onboarding.guard()) return;
     this.getTabBar?.()?.setData({ active: RELEASE_FEATURES.wordPacks ? 3 : 2 });
   },
 
@@ -104,7 +103,7 @@ Page({
     try {
       const [result, saved] = await Promise.all([
         lookup.lookup(term),
-        lookup.isSaved(term).catch(() => false),
+        auth.isLoggedIn() ? lookup.isSaved(term).catch(() => false) : Promise.resolve(false),
       ]);
       if (mine !== this.seq) return; // 有更新的请求在跑，这条作废
       tracker.track(EV.LOOKUP_QUERY, { hit: true });
@@ -129,6 +128,20 @@ Page({
   async addWord() {
     const r = this.data.result;
     if (!r || this.data.saved || this.data.saving) return;
+    if (!auth.isLoggedIn()) {
+      wx.showModal({
+        title: '登录后加入生词',
+        content: '查词和查看释义无需登录。登录后才能把单词保存到你的生词库并同步学习进度。',
+        confirmText: '去登录',
+        cancelText: '继续查词',
+        success: (res) => {
+          if (res.confirm) {
+            wx.navigateTo({ url: '/pages/login/login?back=1' });
+          }
+        },
+      });
+      return;
+    }
     this.setData({ saving: true });
     try {
       await lookup.addWord(r);
@@ -147,6 +160,10 @@ Page({
     } finally {
       this.setData({ saving: false });
     }
+  },
+
+  openReader() {
+    wx.navigateTo({ url: '/pages/reader/reader' });
   },
 
   play() {

@@ -77,3 +77,8 @@
   background: var(--surface); border: 2rpx solid var(--border);
   box-shadow: var(--shadow-xs); font-size: 23rpx; font-weight: 800; color: var(--brand-text);
 }
+.reader-entry {
+  margin-top: 28rpx; padding: 22rpx 24rpx; border-radius: var(--r-md);
+  background: var(--surface); border: 2rpx solid var(--border);
+  color: var(--brand-text); font-size: 24rpx; font-weight: 800;
+}

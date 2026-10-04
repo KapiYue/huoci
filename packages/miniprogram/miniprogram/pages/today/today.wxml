@@ -1,10 +1,4 @@
-<!-- ① 今日 · App 的主屏。
-     还原对象：`docs/prototype/src/components/TodayTab.tsx`（09-03 裁决：**原型为准**，
-     与 design.md §5 冲突时以原型为准 —— 用户条 / AI 额度入口 / 今日小目标
-     这三块是 09-03 按原型加回来的，不是遗漏，别再当超范围删掉。
-     ⚠️ 原型这里还有「VIP 角标」和「会员中心」，**09-03 裁决不卖 Credits 之后一并去掉了**
-     —— 没有会员这个东西了，留个角标只会让用户找一个不存在的付费页）。
-     仍然不加：App 下载引导 · banner/插屏广告（那两条是微信审核红线，不是审美） -->
+<!-- ① 今日 · 登录用户的个人学习首页。 -->
 <view class="login-celebration" wx:if="{{celebrate}}" aria-hidden="true">
   <view class="confetti" wx:for="{{confettiPieces}}" wx:key="*this"></view>
   <view class="welcome-pop">登录成功，欢迎回来 ✨</view>
@@ -19,7 +13,7 @@
     <text wx:else>当前离线，展示的是上次的数据</text>
   </view>
 
-  <!-- 用户条：头像 · 昵称 · VIP 角标 · 会员中心（原型 TodayTab 顶部） -->
+  <!-- 用户条：头像与昵称 -->
   <view class="userbar">
     <view class="userbar-left" bindtap="openProfile">
       <view class="avatar">
@@ -27,25 +21,29 @@
         <image class="avatar-img" wx:else src="/assets/ui/avatar.svg" mode="aspectFill" />
       </view>
       <view class="userbar-text">
-        <view class="userbar-name-row">
-          <text class="userbar-name">{{displayName}}</text>
-          <text class="vip-pill" wx:if="{{releaseFeatures.membership}}">VIP</text>
-        </view>
+        <view class="userbar-name-row"><text class="userbar-name">{{displayName}}</text></view>
         <text class="userbar-sub">{{greeting}}</text>
       </view>
     </view>
-    <!-- `[09-03]` 原型这里是「会员中心 💎」。**不卖 Credits 之后没有「会员」这个东西了**，
-         入口改成额度本身：点进去是「额度从哪来」，不是充值页 -->
-    <view class="member-entry" wx:if="{{releaseFeatures.membership || releaseFeatures.aiQuota}}" bindtap="openVip">会员中心 💎</view>
   </view>
 
   <view class="assistant-row">
     <mascot title="活词小助手 · 艾拉" action="换一句 ↻" message="{{mascotMessage}}" bind:action="rotateMascot" />
   </view>
 
+  <view class="hero hc-card" wx:if="{{loading && !ready}}">
+    <view class="hero-done">正在加载今日学习计划…</view>
+  </view>
+
+  <view class="hero hc-card" wx:elif="{{error && !ready}}">
+    <view class="hero-done">{{error}}</view>
+    <button class="hc-primary-btn hero-btn" bindtap="retryLoad">重新加载</button>
+  </view>
+
+  <block wx:if="{{ready}}">
+
   <!-- 今日记忆队列 -->
   <view class="hero hc-card">
-    <text class="hero-test" wx:if="{{backlogTestMode}}">临时积压测试：只改首页显示，不改真实队列</text>
     <view class="hero-head">
       <view class="hero-tag">
         <view class="hero-dot"></view>
@@ -64,10 +62,9 @@
     <text class="hero-note" wx:if="{{hasBacklog}}">积压共 {{backlogTotal}} 个；本轮只排入 {{total}} 个，先复习到期词，再补充新词</text>
     <text class="hero-note" wx:else>本轮已排入 {{total}} 个；先复习到期词，再补充新词</text>
 
-    <button class="hc-primary-btn hero-btn" wx:if="{{total > 0 || allowCardModeReplay}}" bindtap="startStudy">
+    <button class="hc-primary-btn hero-btn" wx:if="{{total > 0}}" bindtap="startStudy">
       <image class="play-icon" src="/assets/ui/icon-play-white.svg" mode="aspectFit" />
-      <text wx:if="{{total > 0}}">开始今日学习（{{total}} 词）</text>
-      <text wx:else>重新测试学习卡片模式</text>
+      <text>开始今日学习（{{total}} 词）</text>
     </button>
     <view class="hero-done" wx:else>今天的队列已清空</view>
   </view>
@@ -157,6 +154,7 @@
       <text class="word-source">{{item.contextSource}}</text>
     </view>
   </view>
+  </block>
 
   <view class="tail"></view>
 </scroll-view>

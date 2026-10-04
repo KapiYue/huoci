@@ -18,7 +18,6 @@ import type { WordStatus } from '../../shared/wordStatus';
 import type { StudyCard } from '../../shared/types';
 import * as prefs from '../../services/prefs';
 import * as theme from '../../services/theme';
-import * as wordsSvc from '../../services/words';
 
 const STATUS_LABEL: Record<WordStatus, { label: string; badge: string }> = {
   captured: { label: '刚收进', badge: '📥' },
@@ -66,6 +65,7 @@ Page({
   data: {
     themeClass: '',
     loading: true,
+    error: '',
     queue: [] as ViewCard[],
     index: 0,
     card: null as ViewCard | null,
@@ -77,8 +77,6 @@ Page({
     percent: 0,
     ratings: UI_RATINGS,
     cardMode: 'context' as prefs.StudyCardMode,
-    /** 空队列下的临时卡片模式验收不会写复习记录或改变真实学习进度 */
-    isModeReplay: false,
     /** R5：会话结束页那一句阅读器引导，只在本轮出现过底座词时给，且只出现一次 */
     showReaderHint: false,
   },
@@ -96,28 +94,32 @@ Page({
       };
       wx.onKeyDown(this._keyDownListener);
     }
-    const { data } = await learning.fetchStudyQueue(learning.STUDY_ROUND_LIMIT);
-    let replay = false;
-    let cards = data;
-    if (cards.length === 0 && prefs.TEMP_ALLOW_CARD_MODE_REPLAY) {
-      const samples = await wordsSvc.fetchWords('recent');
-      // 有原句的卡片排在最前，切到语境模式后无需先跳过底座词就能立即验收。
-      cards = [...samples.data].sort((a, b) => Number(Boolean(b.contextSentence)) - Number(Boolean(a.contextSentence)));
-      replay = cards.length > 0;
+    await this.loadQueue();
+  },
+
+  async loadQueue() {
+    this.setData({ loading: true, error: '' });
+    try {
+      const { data } = await learning.fetchStudyQueue(learning.STUDY_ROUND_LIMIT);
+      const queue = data.map(decorate);
+      this.setData({
+        queue,
+        card: queue[0] ?? null,
+        percent: queue.length ? Math.round((1 / queue.length) * 100) : 0,
+        cardMode: prefs.get().studyCardMode,
+        showReaderHint: queue.some((c) => !c.contextSentence),
+      });
+      shownAt = Date.now();
+      sessionStartedAt = Date.now();
+    } catch (e) {
+      this.setData({ error: (e as Error).message || '学习队列加载失败，请重试' });
+    } finally {
+      this.setData({ loading: false });
     }
-    const queue = cards.map(decorate);
-    this.setData({
-      loading: false,
-      queue,
-      card: queue[0] ?? null,
-      isModeReplay: replay,
-      percent: queue.length ? Math.round((1 / queue.length) * 100) : 0,
-      cardMode: prefs.get().studyCardMode,
-      // 底座词 = 没有原句的词。有它才给阅读器那句引导，否则那句话没有由头
-      showReaderHint: queue.some((c) => !c.contextSentence),
-    });
-    shownAt = Date.now();
-    sessionStartedAt = Date.now();
+  },
+
+  retryLoad() {
+    void this.loadQueue();
   },
 
   onUnload() {
@@ -155,23 +157,21 @@ Page({
     const duration = Date.now() - shownAt;
 
     let res: learning.SubmitResult = { status: card.status, newlyActivated: false };
-    if (!this.data.isModeReplay) {
-      try {
-        res = learning.submitReview(card, rating, duration);
-      } catch (e) {
-        console.error('[study] 复习记录保存失败', e);
-        wx.showToast({ title: '未能保存这次复习，请清理存储后重试', icon: 'none' });
-        return;
-      }
-
-      tracker.track(EV.REVIEW_SUBMIT, {
-        word_id: card.wordId,
-        rating,
-        mode: 'recall',
-        duration_ms: duration,
-        has_context: card.contextSentence !== null,
-      });
+    try {
+      res = learning.submitReview(card, rating, duration);
+    } catch (e) {
+      console.error('[study] 复习记录保存失败', e);
+      wx.showToast({ title: '未能保存这次复习，请清理存储后重试', icon: 'none' });
+      return;
     }
+
+    tracker.track(EV.REVIEW_SUBMIT, {
+      word_id: card.wordId,
+      rating,
+      mode: 'recall',
+      duration_ms: duration,
+      has_context: card.contextSentence !== null,
+    });
 
     let activated = this.data.activated;
     if (res.newlyActivated) {
@@ -203,10 +203,6 @@ Page({
 
   finish(reviewed: number, activated: number) {
     this.setData({ done: true, reviewed, activated });
-    if (this.data.isModeReplay) {
-      wx.vibrateShort({ type: 'medium' });
-      return;
-    }
     // completed 的口径写在 shared 里，三端只有一处实现（§15「口径统一」）：
     // 队列走完 或 本轮 ≥10 张，取先到者。口径打架的话首次学习完成率就是废数据。
     tracker.track(EV.STUDY_SESSION_END, {

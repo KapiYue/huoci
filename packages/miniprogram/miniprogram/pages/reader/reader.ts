@@ -11,6 +11,7 @@ import * as lookup from '../../services/lookup';
 import * as theme from '../../services/theme';
 import * as tracker from '../../services/tracker';
 import * as wordsSvc from '../../services/words';
+import * as auth from '../../services/auth';
 import { EV } from '../../shared/events';
 import type { Token } from '../../services/reader';
 
@@ -62,8 +63,7 @@ Page({
   _pickedIndex: -1,
   /** 已经在活词库里的词（小写）。进阅读器时拉一次，用来画高亮 */
   _known: {} as Record<string, boolean>,
-  /** 上一次查词的完整结果。收词直接用它，**不再查第二次** ——
-   *  lookup-word 未命中词典时要过一次 AI，第二次往返是实打实的钱和 3 秒 */
+  /** 上一次查词的完整结果。收词直接用它，不再做第二次网络查询。 */
   _lastResult: null as lookup.LookupResult | null,
 
   onLoad() {
@@ -79,6 +79,10 @@ Page({
   },
 
   async loadKnown() {
+    if (!auth.isLoggedIn()) {
+      this._known = {};
+      return;
+    }
     const res = await wordsSvc.fetchWords('recent').catch(() => ({ data: [], stale: true }));
     const map: Record<string, boolean> = {};
     res.data.forEach((w) => {
@@ -188,6 +192,20 @@ Page({
   async capture() {
     const p = this.data.picked;
     if (p.saving || p.saved) return;
+    if (!auth.isLoggedIn()) {
+      wx.showModal({
+        title: '登录后加入生词',
+        content: '阅读和点词查看释义无需登录。登录后才能保存生词与原句。',
+        confirmText: '去登录',
+        cancelText: '继续阅读',
+        success: (res) => {
+          if (res.confirm) {
+            wx.navigateTo({ url: '/pages/login/login?back=1' });
+          }
+        },
+      });
+      return;
+    }
     this.setData({ picked: { ...p, saving: true } });
     try {
       // 弹层里那次查词的结果就在手里，直接用

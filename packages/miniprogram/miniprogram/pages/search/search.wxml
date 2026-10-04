@@ -3,7 +3,7 @@
 
   <view class="search-head">
     <text class="search-title">查词 · 精准捕捉</text>
-    <text class="search-sub">遇到陌生词汇直接查，一键沉淀到你的专属生词库</text>
+    <text class="search-sub">无需登录，输入英文单词即可查看释义</text>
   </view>
 
   <view class="bar">
@@ -28,6 +28,7 @@
     <view class="chips">
       <view class="chip hc-mono" wx:for="{{samples}}" wx:key="*this" data-word="{{item}}" bindtap="useSample">{{item}}</view>
     </view>
+    <view class="reader-entry" bindtap="openReader">阅读英文文章并点词查看释义 →</view>
   </view>
 
   <view class="hint" wx:elif="{{phase === 'loading'}}">
@@ -70,7 +71,7 @@
 
     <view class="foot">
       <view class="added" wx:if="{{saved}}">✓ 已在我的生词库中</view>
-      <button class="hc-primary-btn" wx:else bindtap="addWord" loading="{{saving}}">＋ 加入我的活词</button>
+      <button class="hc-primary-btn" wx:else bindtap="addWord" loading="{{saving}}">＋ 加入我的生词</button>
     </view>
   </view>
 
