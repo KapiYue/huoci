@@ -14,8 +14,17 @@ import { toQuality, EXERCISE_TYPE_SELF_RATING } from '../shared/rating';
 import type { UiRating } from '../shared/rating';
 import { wordStatus } from '../shared/wordStatus';
 import type { WordStatus } from '../shared/wordStatus';
+import basePhonetics from './basePhonetics.generated';
 
 const PLAN_TTL = 5 * 60 * 1000;
+/** 产品裁决：每轮固定最多 20 张。daily_goal 和历史积压都不能放大本轮。 */
+export const STUDY_ROUND_LIMIT = 20;
+
+/** 只供真机验收积压排版；不改队列、不写库。 */
+export function backlogTestSummary(summary: HomeSummary, enabled: boolean): HomeSummary {
+  if (!enabled) return summary;
+  return { ...summary, due_count: 35, new_count: 8, new_available: Math.max(summary.new_available, 8) };
+}
 
 export interface HomeSummary {
   due_count: number;
@@ -40,6 +49,22 @@ export const EMPTY_SUMMARY: HomeSummary = {
   activated_count: 0,
   activated_this_week: 0,
 };
+
+export interface StudyRoundInfo {
+  roundCount: number;
+  backlogTotal: number;
+  hasBacklog: boolean;
+}
+
+/**
+ * 首页必须用实际取回的队列长度描述“本轮”，概览只描述积压。
+ * 两者分开，避免 due_count + new_count 大于 20 时按钮误称本轮会学完全部积压。
+ */
+export function studyRoundInfo(summary: Pick<HomeSummary, 'due_count' | 'new_count'>, queueLength: number): StudyRoundInfo {
+  const backlogTotal = Math.max(0, summary.due_count) + Math.max(0, summary.new_count);
+  const roundCount = Math.min(STUDY_ROUND_LIMIT, Math.max(0, Math.trunc(queueLength)));
+  return { roundCount, backlogTotal, hasBacklog: backlogTotal > roundCount };
+}
 
 /** hc_get_study_queue 与 hc_list_words 返回同一个形状 —— 两边共用 toCard() */
 export type QueueRow = CijingWord & { activated_at: string | null; is_capture: boolean };
@@ -73,11 +98,52 @@ function sourceLabel(w: CijingWord): string {
   return when ? `${title} · ${when}` : title;
 }
 
+/** 数据库里同时存在 `fəʊ`、`/fəʊ/` 两种历史写法，展示层统一成原型的 /…/。 */
+function displayPhonetic(value: string | null, term: string): string {
+  const raw = (value || basePhonetics[term.toLowerCase()] || '—').trim();
+  let inner = raw.replace(/^\/+|\/+$/g, '').trim();
+  // 早期 ECDICT 音标使用 `ә / є / ' / : / ei / әu` 这套旧式 ASCII/DJ 写法；
+  // 与新收录词的 Unicode IPA 混排会出现截图里的 bowl、landscape 格式不一致。
+  if (/[әє':]/.test(inner)) {
+    inner = inner
+      .replace(/\.\s+/g, '; ')
+      .replace(/єә/g, 'eə')
+      .replace(/әu/g, 'əʊ')
+      .replace(/ɒi/g, 'ɔɪ')
+      .replace(/ei/g, 'eɪ')
+      .replace(/ai/g, 'aɪ')
+      .replace(/au/g, 'aʊ')
+      .replace(/iә/g, 'ɪə')
+      .replace(/uә/g, 'ʊə')
+      .replace(/i:/g, 'iː')
+      .replace(/u:/g, 'uː')
+      .replace(/ɑ:/g, 'ɑː')
+      .replace(/ɒ:/g, 'ɔː')
+      .replace(/ә:/g, 'ɜː')
+      .replace(/ә/g, 'ə')
+      .replace(/є/g, 'e')
+      .replace(/'/g, 'ˈ')
+      .replace(/\./g, 'ˌ')
+      .replace(/i(?!ː)/g, 'ɪ')
+      .replace(/u(?!ː)/g, 'ʊ')
+      .replace(/ɪ(?=\s|;|$)/g, 'i');
+  }
+  return `/${inner || '—'}/`;
+}
+
+/**
+ * 历史数据的 audio_url 大多为空。先使用库内音频；空值时用词典的美音朗读地址，
+ * 让原型中始终存在的喇叭在小程序里也真正可点、可播放。
+ */
+function pronunciationUrl(value: string | null, term: string): string {
+  return value || `https://dict.youdao.com/dictvoice?audio=${encodeURIComponent(term)}&type=2`;
+}
+
 export function toCard(row: QueueRow): StudyCard {
   return {
     wordId: row.id,
     term: row.term,
-    phonetic: row.phonetic || '',
+    phonetic: displayPhonetic(row.phonetic, row.term),
     pos: Array.isArray(row.parts) && row.parts.length > 0 ? String(row.parts[0]) : '',
     meaning: row.custom_meaning || row.primary_meaning,
     // 底座词没有原句，正面只有拼写 + 音标，**不编造例句**（§5.4 S5）
@@ -85,17 +151,18 @@ export function toCard(row: QueueRow): StudyCard {
     contextSource: sourceLabel(row),
     exampleEn: row.example_en,
     exampleZh: row.example_zh,
-    audioUrl: row.audio_url,
+    audioUrl: pronunciationUrl(row.audio_url, row.term),
     repetitions: row.repetitions,
     interval: row.interval_days,
     activatedAt: row.activated_at,
   };
 }
 
-export async function fetchStudyQueue(limit = 20): Promise<Loaded<StudyCard[]>> {
+export async function fetchStudyQueue(limit = STUDY_ROUND_LIMIT): Promise<Loaded<StudyCard[]>> {
+  const roundLimit = Math.min(STUDY_ROUND_LIMIT, Math.max(0, Math.trunc(limit)));
   try {
-    const rows = await gw.rpc<QueueRow[]>('hc_get_study_queue', { p_limit: limit });
-    const cards = (rows || []).map(toCard);
+    const rows = await gw.rpc<QueueRow[]>('hc_get_study_queue', { p_limit: roundLimit });
+    const cards = (rows || []).slice(0, roundLimit).map(toCard);
     store.writeCache(store.SK.CARDS_CACHE, cards);
     return { data: cards, stale: false };
   } catch (e) {

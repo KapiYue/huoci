@@ -8,16 +8,19 @@
       <view class="bar"><view class="bar-fill" style="width:{{percent}}%"></view></view>
     </view>
     <view class="hc-badge st-{{card.status}}">{{card.badge}} {{card.statusLabel}}</view>
+    <view class="close" bindtap="back" aria-label="关闭">×</view>
   </view>
 
   <!-- 卡片 -->
-  <view class="card hc-card" wx:if="{{!done}}">
+  <view class="card hc-card" wx:if="{{!done}}" bindtap="tapCard">
     <view class="card-body">
       <!-- 语境优先：正面直接给原句、把词挖空。底座词没有 cloze，自动落到下面的 classic 分支 -->
       <block wx:if="{{cardMode === 'context' && card.cloze && !revealed}}">
-        <view class="cloze-label">从这句话里想起它</view>
+        <view class="cloze-label">🧭 语境推理 · 猜猜挖空生词</view>
+        <view class="cloze-guide">结合当前场景语境回忆目标生词…</view>
         <view class="cloze">"{{card.cloze}}"</view>
-        <view class="ctx-source"><view class="dot"></view><text>{{card.contextSource}}</text></view>
+        <view class="ctx-source"><view class="dot"></view><text class="source-text">{{card.contextSource}}</text></view>
+        <view class="flip-hint">点击卡片翻看生词与释义</view>
       </block>
 
       <block wx:else>
@@ -26,35 +29,20 @@
             <text class="term">{{card.term}}</text>
             <view class="phonetic-row">
               <text class="phonetic hc-mono">{{card.phonetic}}</text>
-              <!-- 🔊 留着等 TTS。`wx:if` 恒不显示 = 等于没画。
-                   🔴 TTS 就位前**不许给 audioUrl 赋值** -->
-              <view class="speak" bindtap="playAudio" wx:if="{{card.audioUrl}}">🔊</view>
+              <view class="speak" catchtap="playAudio"><image class="speak-icon" src="/assets/ui/icon-volume.svg" mode="aspectFit" /></view>
             </view>
           </view>
           <text class="pos hc-mono" wx:if="{{card.pos}}">{{card.pos}}</text>
         </view>
       </block>
 
-      <view class="divider"></view>
-
-      <!-- capture 词：原句 + 来源。这是活词全部差异化的落点。
-           语境模式的正面已经给过挖空句了，翻面才把完整原句补上 -->
-      <block wx:if="{{card.contextSentence && (cardMode !== 'context' || !card.cloze || revealed)}}">
-        <view class="ctx-label">🧭 真实撞见原句</view>
-        <view class="ctx">"{{card.contextSentence}}"</view>
-        <view class="ctx-source"><view class="dot"></view><text>{{card.contextSource}}</text></view>
-      </block>
-
-      <!-- 底座词：没有原句就**不编造例句**。这个差异是刻意的 -->
-      <view class="base-note" wx:else>
-        <text class="base-title">🏷️ {{card.contextSource}}</text>
-        <text class="base-body">此词来自系统基础语料。想让卡片带上真实原句？去阅读器贴一篇你自己的文章点词收录。</text>
-      </view>
-
       <!-- 背面 -->
       <view class="answer" wx:if="{{revealed}}">
+        <view class="divider"></view>
         <text class="meaning">{{card.meaning}}</text>
-        <view class="example" wx:if="{{card.exampleEn}}">
+        <view class="ctx" wx:if="{{card.contextSentence}}">“{{card.contextSentence}}”</view>
+        <view class="ctx-source"><view class="dot"></view><text class="source-text">{{card.contextSource}}</text></view>
+        <view class="example" wx:elseif="{{card.exampleEn}}">
           <text class="ex-en">"{{card.exampleEn}}"</text>
           <text class="ex-zh" wx:if="{{card.exampleZh}}">{{card.exampleZh}}</text>
         </view>
@@ -62,8 +50,8 @@
     </view>
 
     <!-- 底部操作 -->
-    <view class="card-foot">
-      <button class="hc-primary-btn" wx:if="{{!revealed}}" bindtap="reveal">显示答案</button>
+    <view class="card-foot" catchtap="noop">
+      <button class="hc-primary-btn" wx:if="{{!revealed}}" bindtap="reveal">翻看背面 <text class="key-hint">（空格键）</text></button>
       <view class="rates" wx:else>
         <view class="rate rate-{{item.rating}}" wx:for="{{ratings}}" wx:key="rating"
               data-rating="{{item.rating}}" bindtap="rate">
@@ -78,8 +66,9 @@
   <!-- 完成页 -->
   <view class="finish" wx:if="{{done}}">
     <view class="finish-mark">✓</view>
-    <text class="finish-title">今日复习完成！</text>
-    <text class="finish-sub">完成 {{reviewed}} 个词的激活循环，保持记忆稳固</text>
+    <text class="finish-title">{{isModeReplay ? '卡片模式测试完成！' : '今日复习完成！'}}</text>
+    <text class="finish-sub" wx:if="{{isModeReplay}}">本次仅重放测试卡片，没有改变真实学习进度</text>
+    <text class="finish-sub" wx:else>完成 {{reviewed}} 个词的激活循环<text wx:if="{{activated > 0}}">，新激活 {{activated}} 个活词</text></text>
 
     <view class="finish-stats">
       <view class="fs hc-card">
@@ -102,7 +91,7 @@
       <text class="reader-hint-sub">读一篇你自己的文章，点词就能连原句和来源一起收下 →</text>
     </view>
 
-    <button class="hc-primary-btn finish-btn" bindtap="back">返回今日主页</button>
+    <button class="hc-primary-btn finish-btn" bindtap="back">完成并返回今日</button>
   </view>
 
   <!-- 空队列 -->

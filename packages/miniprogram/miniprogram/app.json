@@ -40,10 +40,6 @@
         "text": "我的生词"
       },
       {
-        "pagePath": "pages/wordpacks/wordpacks",
-        "text": "词包"
-      },
-      {
         "pagePath": "pages/search/search",
         "text": "查词"
       },

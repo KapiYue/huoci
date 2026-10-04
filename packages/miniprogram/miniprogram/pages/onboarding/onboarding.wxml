@@ -1,109 +1,94 @@
-<!-- 首启三屏 · design.md §5.3 S1 / S2 / S3
-     ⚠️ 文案受红线约束：不得出现「英语水平测试」「等级/星级/段位」「加油」「打卡成功」 -->
-<view class="hc-page ob {{themeClass}}">
+<!-- H1 首启 S1–S3。UI 唯一标准：docs/prototype/src/components/OnboardingFlow.tsx -->
+<view class="hc-page hc-immersive-page ob {{themeClass}}">
+  <view class="dream dream-a"></view>
+  <view class="dream dream-b"></view>
 
-  <!-- 进度：三个点，不写「第 2 步 / 共 3 步」——那是表单感 -->
-  <view class="dots">
-    <view class="dot {{step >= 1 ? 'is-on' : ''}}"></view>
-    <view class="dot {{step >= 2 ? 'is-on' : ''}}"></view>
-    <view class="dot {{step >= 3 ? 'is-on' : ''}}"></view>
-  </view>
-
-  <!-- ==================== S1 · 场景勾选 ==================== -->
   <block wx:if="{{step === 1}}">
-    <view class="head">
-      <!-- 原型 OnboardingFlow 的「目标用时 40 秒」——先把预期说清楚，用户才肯往下点 -->
-      <text class="badge">⏱ 目标用时 40 秒</text>
-      <text class="title">你平时在哪读英文？</text>
-      <text class="sub">多选。选完我们更懂你撞见的词长什么样。</text>
-    </view>
+    <view class="screen-body">
+      <view class="step-row"><text>第 1 步 / 共 3 步</text><text>目标用时 40 秒</text></view>
+      <text class="title">你平时在哪里遇到英文最多？</text>
+      <text class="sub">多选场景，我们将为你匹配最契合的技术与职场语境</text>
 
-    <view class="scene-grid">
-      <view
-        wx:for="{{scenes}}"
-        wx:key="id"
-        class="scene {{selectedScenes.indexOf(item.id) > -1 ? 'is-on' : ''}}"
-        data-id="{{item.id}}"
-        bindtap="toggleScene"
-      >
-        <text class="scene-icon">{{item.icon}}</text>
-        <text class="scene-label">{{item.label}}</text>
-        <text class="scene-desc">{{item.desc}}</text>
-        <view class="scene-tick" wx:if="{{selectedScenes.indexOf(item.id) > -1}}">✓</view>
+      <view class="scene-grid">
+        <button wx:for="{{scenes}}" wx:key="id"
+          class="scene {{item.selected ? 'is-on' : ''}}"
+          data-id="{{item.id}}" bindtap="toggleScene" hover-class="tap-down"
+          role="button" aria-label="{{item.label}}，{{item.desc}}">
+          <view class="scene-top">
+            <view class="scene-icon"><image class="scene-icon-image" src="{{item.selected ? item.iconOn : item.icon}}" mode="aspectFit" /></view>
+            <text class="scene-check" wx:if="{{item.selected}}">✓</text>
+          </view>
+          <text class="scene-label">{{item.label}}</text>
+          <text class="scene-desc">{{item.desc}}</text>
+        </button>
       </view>
     </view>
 
-    <view class="foot">
-      <view class="hc-primary-btn" bindtap="goStep2">下一步</view>
-      <text class="skip" bindtap="skipScenes">先跳过</text>
+    <view class="bottom-action">
+      <view class="primary {{selectedScenes.length === 0 ? 'is-disabled' : ''}}"
+        bindtap="goStep2" hover-class="tap-down" role="button" aria-disabled="{{selectedScenes.length === 0}}" aria-label="下一步：40 秒生词初探">
+        <text>下一步：40 秒生词初探</text><text class="arrow">→</text>
+      </view>
     </view>
   </block>
 
-  <!-- ==================== S2 · 30 词勾选 ==================== -->
   <block wx:elif="{{step === 2}}">
-    <view class="head">
-      <!-- 文案固定，不要改 -->
+    <view class="screen-body word-screen">
+      <view class="step-row"><text>第 2 步 / 共 3 步</text><text class="selected-count">已选 {{checkedCount}} 词</text></view>
       <text class="title">哪些词你说不出口？</text>
-      <text class="sub">看得懂但说不出来的，点一下。没有对错。</text>
+      <text class="sub">点击勾选平时「认识但张口卡壳」或「意思模棱两可」的生词</text>
+
+      <scroll-view class="word-scroll" scroll-y enhanced="{{true}}" bounces="{{true}}" show-scrollbar="{{false}}">
+        <view class="word-grid">
+          <button wx:for="{{words}}" wx:key="spelling"
+            class="word-card {{item.checked ? 'is-on' : ''}}"
+            data-spelling="{{item.spelling}}" catchtap="toggleWord" hover-class="tap-down"
+            aria-label="{{item.spelling}}，{{item.hint}}，{{item.checked ? '已选' : '未选'}}">
+            <view class="word-copy">
+              <text class="word-spelling">{{item.spelling}}</text>
+              <text class="word-hint">{{item.hint}}</text>
+            </view>
+            <view class="word-check">{{item.checked ? '✓' : ''}}</view>
+          </button>
+        </view>
+        <view class="word-pad"></view>
+      </scroll-view>
     </view>
 
-    <scroll-view class="word-scroll" scroll-y enhanced show-scrollbar="{{false}}">
-      <view class="word-grid">
-        <!-- 只显示拼写。显示释义会把它变成阅读理解题（§5.3 S2） -->
-        <view
-          wx:for="{{words}}"
-          wx:key="spelling"
-          class="word {{item.checked ? 'is-on' : ''}}"
-          data-index="{{index}}"
-          bindtap="toggleWord"
-        >{{item.spelling}}</view>
+    <view class="bottom-action">
+      <view class="primary" bindtap="finishSelection" hover-class="tap-down" role="button">
+        <text>生成我的今日活词计划</text><text class="arrow">→</text>
       </view>
-      <view class="scroll-pad"></view>
-    </scroll-view>
-
-    <view class="foot foot-fixed">
-      <view class="hc-primary-btn {{busy ? 'is-pressed' : ''}}" bindtap="finishSelection">
-        完成{{checkedCount > 0 ? '（已选 ' + checkedCount + ' 个）' : ''}}
-      </view>
-      <text class="skip" bindtap="backToStep1">上一步</text>
     </view>
   </block>
 
-  <!-- ==================== S3 · 结果 + 播种 ==================== -->
   <block wx:else>
-    <!-- 不显示分数、不显示星级、不显示「你的水平是 B2」 -->
-    <view class="result">
-      <view class="result-mark">活</view>
+    <view class="result-screen">
+      <view class="result-main">
+        <view class="sparkle-mark">✦</view>
+        <text class="result-title" wx:if="{{!isHighLevel}}">今天先帮你激活 {{seededCount}} 个词</text>
+        <text class="result-title" wx:else>你的底子够了</text>
+        <text class="result-sub" wx:if="{{!isHighLevel}}">已根据你的场景定制学习队列。无需生硬背诵，结合真实例句与来源进行激活。</text>
+        <text class="result-sub" wx:else>真正该收的，是你在自己的文章里撞见的词。</text>
 
-      <block wx:if="{{!isHighLevel}}">
-        <text class="result-title">今天先帮你激活 {{seededCount}} 个词</text>
-        <text class="result-sub">它们已经放进「我的生词」。明天这个时候，它们会回来找你。</text>
-        <!-- 原型 S3 的结果卡。**只陈述事实**：不给分数、不给星级、不写「你的水平是 B2」 -->
-        <view class="result-card hc-card">
-          <view class="rc-row">
-            <text class="rc-label">匹配场景</text>
-            <text class="rc-value">{{sceneLabels || '未选，按通用词表来'}}</text>
-          </view>
-          <view class="rc-row">
-            <text class="rc-label">首批播种词汇</text>
-            <text class="rc-value hc-mono">{{seededCount}} 个</text>
-          </view>
+        <view class="result-card">
+          <view class="result-row"><text class="result-label">匹配场景</text><text class="result-value purple">{{sceneLabels || '通用职场语境'}}</text></view>
+          <view class="result-row"><text class="result-label">首批播种词汇</text><text class="result-value green">{{seededCount}} 个高频职场词</text></view>
+          <view class="result-row no-border"><text class="result-label">活词激活标准</text><text class="result-value">稳定性 ≥ 21 天</text></view>
         </view>
-        <view class="foot">
-          <view class="hc-primary-btn" bindtap="startLearning">开始学习</view>
-        </view>
-      </block>
+      </view>
 
-      <!-- 零勾选分支（§5.3 S3）：底子够了，该去读自己的文章 -->
-      <block wx:else>
-        <text class="result-title">你的底子够了</text>
-        <text class="result-sub">底座词对你没什么用。真正该收的，是你自己文章里撞见的词。</text>
-        <text class="result-note">先放 {{seededCount}} 个低频词垫着，随时可以删。</text>
-        <view class="foot">
-          <view class="hc-primary-btn" bindtap="goReader">去读一篇自己的文章</view>
-          <text class="skip" bindtap="startLearning">先看看这 {{seededCount}} 个词</text>
-        </view>
-      </block>
+      <view class="bottom-action result-action">
+        <view wx:if="{{isHighLevel}}" class="primary result-primary" bindtap="goReader" hover-class="tap-down" role="button"><text>去读一篇自己的文章</text><text class="arrow">→</text></view>
+        <view wx:else class="primary result-primary" bindtap="startLearning" hover-class="tap-down" role="button"><text>立即进入「今日」开始</text><text class="arrow">→</text></view>
+      </view>
     </view>
   </block>
+
+  <view class="ob-tabbar">
+    <view class="ob-tab {{item.active ? 'is-on' : ''}}" wx:for="{{previewTabs}}" wx:key="text">
+      <image class="ob-tab-icon" src="{{item.icon}}" mode="aspectFit" />
+      <text>{{item.text}}</text>
+    </view>
+  </view>
 </view>

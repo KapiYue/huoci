@@ -1,5 +1,6 @@
 {
   "navigationBarTitleText": "今日",
+  "navigationStyle": "custom",
   "usingComponents": {
     "mascot": "../../components/mascot/mascot"
   }

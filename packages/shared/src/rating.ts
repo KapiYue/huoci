@@ -34,9 +34,9 @@ export interface RatingOption {
   hint: string;
 }
 
-/** UI 顺序固定：想不起来 / 有点模糊 / 记得。左→右由差到好。 */
+/** UI 顺序固定，文案与 React StudySessionModal 保持一致。左→右由差到好。 */
 export const UI_RATINGS: readonly RatingOption[] = [
-  { rating: 1, emoji: '😵', label: '想不起来', hint: '1 天后复习' },
-  { rating: 2, emoji: '😐', label: '有点模糊', hint: '减半间隔' },
-  { rating: 3, emoji: '🙂', label: '记得', hint: '正常延长' },
+  { rating: 1, emoji: '😵', label: '不认得 (1)', hint: '1天后复习' },
+  { rating: 2, emoji: '😐', label: '模糊 (2)', hint: '减半间隔' },
+  { rating: 3, emoji: '🙂', label: '掌握 (3)', hint: '正常延长' },
 ] as const;

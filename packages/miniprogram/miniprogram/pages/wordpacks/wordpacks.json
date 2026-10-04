@@ -1,4 +1,5 @@
 {
   "navigationBarTitleText": "词包",
+  "navigationStyle": "custom",
   "usingComponents": {}
 }

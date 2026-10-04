@@ -1,18 +1,20 @@
 .words { padding-top: 24rpx; }
 
-.head { display: flex; align-items: baseline; justify-content: space-between; }
+.head { display: flex; align-items: center; justify-content: space-between; gap: 18rpx; }
 .title { font-size: 40rpx; font-weight: 800; color: var(--text-1); }
-.total { font-size: 24rpx; color: var(--text-3); }
+.total { display: block; margin-top: 5rpx; font-size: 22rpx; color: var(--text-3); }
+.strong-purple { color: var(--brand-text); font-weight: 900; }
+.strong-green { color: var(--ok-600); font-weight: 900; }
+.context-badge { flex: none; padding: 10rpx 16rpx; border: 2rpx solid var(--border-strong); border-radius: var(--r-full); background: var(--surface); color: var(--brand-text); font-size: 19rpx; font-weight: 800; box-shadow: var(--shadow-xs); }
 
 /* —— 三个筛选 —— */
 .tabs {
-  display: flex; gap: 8rpx; padding: 8rpx; margin: 24rpx 0;
-  background: var(--surface-soft); border: 2rpx solid var(--border);
-  border-radius: var(--r-md); box-shadow: var(--shadow-xs);
+  display: flex; gap: 12rpx; margin: 24rpx 0;
 }
 .tab {
-  flex: 1; text-align: center; padding: 18rpx 0; border-radius: var(--r-sm);
-  font-size: 26rpx; font-weight: 700; color: var(--text-2);
+  flex: 1; text-align: center; padding: 14rpx 4rpx; border-radius: var(--r-sm);
+  border: 2rpx solid var(--border); background: var(--surface);
+  font-size: 22rpx; font-weight: 800; color: var(--text-2); box-shadow: var(--shadow-xs);
 }
 .tab.is-on {
   color: #fff; font-weight: 800;
@@ -40,26 +42,24 @@
 .empty-alt { display: block; margin-top: 24rpx; font-size: 24rpx; color: var(--brand-text); font-weight: 700; }
 
 /* —— 列表 —— */
-.row { padding: 24rpx 28rpx; margin-bottom: 20rpx; }
+.row { padding: 24rpx 28rpx; margin-bottom: 18rpx; border-radius: 28rpx; background: var(--surface); }
 /* 底座词信息更少，卡片也更轻。这个差异是刻意的（§5.1 全局视觉主张） */
-.row.is-base { background: var(--surface-soft); box-shadow: none; }
+.row.is-base { background: var(--surface); box-shadow: var(--shadow-card); }
 
-.row-top { display: flex; align-items: baseline; gap: 16rpx; }
+.row-top { display: flex; align-items: center; gap: 12rpx; }
 .term { font-size: 34rpx; font-weight: 800; color: var(--text-1); }
 .phonetic { font-size: 22rpx; color: var(--text-4); }
+.speaker { width: 36rpx; height: 36rpx; display: flex; align-items: center; justify-content: center; color: var(--brand-text); font-size: 22rpx; border-radius: 50%; background: rgba(168,85,247,.1); }
+.speaker-icon { width: 24rpx; height: 24rpx; }
+.speaker.is-on { color: var(--brand-600); opacity: .55; }
 .grow { flex: 1; }
 
 .meaning { display: block; margin-top: 8rpx; font-size: 26rpx; color: var(--text-2); }
 
-/* 原句：capture 词的核心资产，比释义更该被看见 */
-.context {
-  display: block; margin-top: 16rpx; padding: 16rpx 20rpx;
-  font-size: 24rpx; line-height: 1.7; color: var(--text-2);
-  background: var(--surface-sunk); border-left: 6rpx solid var(--border-strong);
-  border-radius: 0 var(--r-sm) var(--r-sm) 0;
-}
-
-.source { display: block; margin-top: 14rpx; font-size: 22rpx; color: var(--text-3); }
+.context-line { display: flex; align-items: center; gap: 16rpx; margin-top: 12rpx; padding-left: 14rpx; border-left: 4rpx solid #c084fc; }
+.context { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 20rpx; color: var(--text-3); font-style: italic; }
+.source { flex: none; max-width: 46%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: right; font-size: 19rpx; font-weight: 800; color: var(--brand-text); }
+.base-source { display: block; margin-top: 12rpx; text-align: right; font-size: 19rpx; font-weight: 800; color: var(--brand-text); }
 
 .more { padding: 32rpx 0; text-align: center; font-size: 22rpx; color: var(--text-4); }
 .tail { height: 40rpx; }
@@ -77,35 +77,39 @@
 
 .mask {
   position: fixed; inset: 0; z-index: 60; background: rgba(2, 6, 23, 0.5);
-  display: flex; align-items: flex-end;
+  display: flex; align-items: center; justify-content: center; padding: 24rpx;
 }
 .drawer {
-  width: 100%; padding: 40rpx 32rpx;
-  padding-bottom: calc(env(safe-area-inset-bottom) + 40rpx);
-  border-radius: var(--r-xl) var(--r-xl) 0 0;
-  background: var(--surface); border-top: 2rpx solid var(--border);
+  width: 100%; padding: 40rpx 40rpx 38rpx; border-radius: 44rpx;
+  background: var(--surface); border: 2rpx solid var(--border); box-shadow: 0 28rpx 80rpx rgba(15,23,42,.25);
 }
-.drawer-head { display: flex; align-items: baseline; gap: 18rpx; }
+.drawer-head { display: flex; align-items: center; justify-content: space-between; }
+.drawer-word { display: flex; align-items: center; gap: 14rpx; }
 .drawer-term { font-size: 42rpx; font-weight: 800; color: var(--text-1); }
-.drawer-phonetic { font-size: 24rpx; font-weight: 700; color: var(--brand-text); }
-.drawer-meaning { display: block; margin-top: 14rpx; font-size: 27rpx; color: var(--text-2); line-height: 1.7; }
+.drawer-speaker { width: 46rpx; height: 46rpx; padding: 8rpx; border-radius: 50%; background: #f3e8ff; }
+.drawer-speaker-icon { width: 100%; height: 100%; }
+.drawer-x { width: 58rpx; height: 58rpx; display: flex; align-items: center; justify-content: center; border-radius: 50%; background: #f1f5f9; color: #94a3b8; font-size: 36rpx; }
+.drawer-phonetic { display: block; margin-top: 2rpx; font-size: 22rpx; font-weight: 700; color: var(--brand-text); }
+.drawer-divider { height: 2rpx; margin: 22rpx 0; background: #e2e8f0; }
+.drawer-caption { display: block; font-size: 20rpx; font-weight: 800; color: var(--text-4); }
+.drawer-meaning { display: block; margin-top: 8rpx; font-size: 26rpx; font-weight: 800; color: var(--text-1); line-height: 1.55; }
 .drawer-ctx {
-  margin: 24rpx 0; padding: 24rpx; border-radius: var(--r-md);
-  background: var(--surface-sunk); border: 2rpx solid var(--border);
+  margin: 22rpx 0; padding: 18rpx 20rpx 14rpx; border-radius: var(--r-md);
+  background: #faf5ff; border: 2rpx solid #f3e8ff;
 }
-.drawer-label { display: block; font-size: 20rpx; font-weight: 800; color: var(--brand-text); }
-.drawer-sentence { display: block; margin-top: 10rpx; font-size: 25rpx; line-height: 1.8; color: var(--text-2); }
-.drawer-sentence-plain { display: block; margin-top: 10rpx; font-size: 22rpx; line-height: 1.8; color: var(--text-3); }
-.drawer-source { display: block; margin-top: 10rpx; font-size: 20rpx; font-weight: 700; color: var(--text-3); }
-.drawer-stats { display: flex; flex-wrap: wrap; gap: 14rpx; }
+.drawer-label { display: block; font-size: 20rpx; font-weight: 800; color: var(--brand-600); }
+.drawer-sentence { display: block; margin-top: 9rpx; padding: 16rpx; border-radius: 18rpx; font-size: 22rpx; line-height: 1.65; color: var(--text-2); background: rgba(255,255,255,.7); }
+.drawer-source { display: block; margin-top: 10rpx; font-size: 19rpx; font-weight: 700; color: var(--text-4); }
+.drawer-stats { margin-top: 24rpx; padding: 18rpx 22rpx; border-radius: var(--r-md); background: var(--surface-sunk); border: 2rpx solid var(--border); }
 .ds {
-  width: 48%; padding: 20rpx; border-radius: var(--r-md);
-  background: var(--surface-sunk); border: 2rpx solid var(--border);
+  display: flex; align-items: center; justify-content: space-between; min-height: 44rpx;
 }
-.ds-label { display: block; font-size: 19rpx; color: var(--text-3); }
-.ds-value { display: block; margin-top: 6rpx; font-size: 26rpx; font-weight: 800; color: var(--text-1); }
+.ds-label { font-size: 20rpx; color: var(--text-4); }
+.ds-value { font-size: 21rpx; font-weight: 800; color: var(--text-1); }
+.ds-status { color: var(--brand-600); }
+.ds-activated { color: var(--ok-500); }
 .drawer-close {
-  margin-top: 28rpx; height: 88rpx; display: flex; align-items: center; justify-content: center;
-  border-radius: var(--r-md); border: 2rpx solid var(--border-strong);
-  font-size: 26rpx; font-weight: 800; color: var(--text-2);
+  margin-top: 26rpx; height: 80rpx; display: flex; align-items: center; justify-content: center;
+  border-radius: 26rpx; background: linear-gradient(90deg,var(--brand-600),#a000ff); color: #fff;
+  font-size: 24rpx; font-weight: 800;
 }

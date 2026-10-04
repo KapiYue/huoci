@@ -1,5 +1,9 @@
 .search { padding-top: 24rpx; display: flex; flex-direction: column; min-height: 100vh; }
 
+.search-head { margin: 6rpx 0 24rpx; }
+.search-title { display: block; color: var(--text-1); font-size: 40rpx; line-height: 1.2; font-weight: 900; }
+.search-sub { display: block; margin-top: 7rpx; color: var(--text-3); font-size: 22rpx; line-height: 1.5; }
+
 /* —— 搜索条 —— */
 .bar {
   display: flex; align-items: center; gap: 16rpx;
@@ -7,23 +11,25 @@
   background: var(--surface); border: 2rpx solid var(--border);
   border-radius: var(--r-md); box-shadow: var(--shadow-xs);
 }
-.bar-icon { font-size: 28rpx; }
+.bar-icon { width: 34rpx; height: 34rpx; }
 .bar-input { flex: 1; font-size: 30rpx; color: var(--text-1); }
 .ph { color: var(--text-4); }
 .bar-clear { padding: 0 8rpx; font-size: 26rpx; color: var(--text-4); }
 
 /* —— 空 / 加载 / 无结果 / 失败 —— */
-.hint { padding: 96rpx 32rpx; text-align: center; }
+.hint { padding: 30rpx 0; text-align: left; }
 .hint-title { display: block; font-size: 30rpx; font-weight: 800; color: var(--text-1); }
 .hint-sub { display: block; margin-top: 16rpx; font-size: 24rpx; color: var(--text-3); line-height: 1.7; }
 
 /* —— 结果卡 —— */
 .card { margin-top: 32rpx; padding: 32rpx 28rpx; }
-.card-head { display: flex; align-items: baseline; gap: 16rpx; }
+.card-head { display: flex; align-items: center; gap: 14rpx; }
 .term { font-size: 44rpx; font-weight: 800; color: var(--text-1); }
-.phonetic { font-size: 24rpx; color: var(--text-3); }
-.speak { margin-left: auto; font-size: 32rpx; }
+.phonetic { display: block; margin-top: 4rpx; font-size: 24rpx; color: var(--brand-text); font-weight: 700; }
+.speak { width: 50rpx; height: 50rpx; display: flex; align-items: center; justify-content: center; border-radius: 50%; background: rgba(168,85,247,.1); font-size: 26rpx; }
 .speak.is-on { opacity: 0.4; }
+.divider { height: 2rpx; margin: 26rpx 0; background: var(--border); }
+.result-label { display: block; margin-bottom: 10rpx; color: var(--text-3); font-size: 20rpx; font-weight: 900; letter-spacing: 2rpx; }
 
 .part { display: flex; gap: 16rpx; margin-top: 20rpx; }
 .pos {
@@ -38,23 +44,36 @@
   margin-top: 28rpx; padding: 20rpx 24rpx;
   background: var(--surface-sunk); border-radius: var(--r-sm);
 }
+.example-label { color: var(--brand-500); }
 .example-en { display: block; font-size: 24rpx; color: var(--text-2); line-height: 1.7; }
 .example-zh { display: block; margin-top: 8rpx; font-size: 22rpx; color: var(--text-3); }
 
 /* —— 底部主操作 —— */
-.foot { margin-top: auto; padding: 32rpx 0 calc(env(safe-area-inset-bottom) + 32rpx); }
+.foot { margin-top: 32rpx; padding-top: 8rpx; }
+.foot .hc-primary-btn {
+  width: 100%;
+  height: 88rpx;
+  border-radius: 28rpx;
+  font-size: 26rpx;
+}
 .added {
   height: 104rpx; display: flex; align-items: center; justify-content: center;
   border-radius: var(--r-md); font-size: 28rpx; font-weight: 700;
   color: var(--st-activated-fg); background: var(--st-activated-bg);
   border: 2rpx solid var(--st-activated-bd);
 }
+.saved-toast {
+  position: fixed; z-index: 80; left: 50%; bottom: calc(env(safe-area-inset-bottom) + 130rpx);
+  transform: translateX(-50%); width: max-content; max-width: 620rpx;
+  padding: 16rpx 26rpx; border-radius: var(--r-full); background: var(--ok-600);
+  color: #fff; font-size: 21rpx; font-weight: 800; box-shadow: 0 16rpx 40rpx rgba(5,150,105,.28);
+}
 
 /* —— `[09-03]` 空态里的高频场景词（原型 SearchTab） —— */
-.chips-title { display: block; margin-top: 44rpx; font-size: 23rpx; font-weight: 800; color: var(--text-2); }
-.chips { display: flex; flex-wrap: wrap; gap: 16rpx; margin-top: 20rpx; }
+.chips-title { display: block; margin-top: 0; font-size: 23rpx; font-weight: 900; color: var(--text-2); }
+.chips { display: flex; flex-wrap: wrap; gap: 14rpx; margin-top: 16rpx; }
 .chip {
-  padding: 12rpx 24rpx; border-radius: var(--r-sm);
-  background: var(--surface); border: 2rpx solid var(--border-strong);
-  font-size: 23rpx; font-weight: 700; color: var(--brand-text);
+  padding: 10rpx 22rpx; border-radius: var(--r-full);
+  background: var(--surface); border: 2rpx solid var(--border);
+  box-shadow: var(--shadow-xs); font-size: 23rpx; font-weight: 800; color: var(--brand-text);
 }

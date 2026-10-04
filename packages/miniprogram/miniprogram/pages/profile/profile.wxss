@@ -9,10 +9,10 @@
 .avatar {
   width: 104rpx; height: 104rpx; flex: none; border-radius: var(--r-full);
   background: linear-gradient(135deg, var(--brand-500), var(--indigo-500));
-  display: flex; align-items: center; justify-content: center; overflow: hidden;
+  display: flex; align-items: center; justify-content: center; overflow: hidden; padding: 4rpx;
 }
 .avatar.is-vip { box-shadow: 0 0 0 4rpx var(--warn-500); }
-.avatar-img { width: 100%; height: 100%; }
+.avatar-img { width: 100%; height: 100%; border-radius: var(--r-full); background: #ede9fe; }
 .avatar-mark { color: #fff; font-size: 40rpx; font-weight: 800; }
 .banner-text { min-width: 0; }
 .banner-name-row { display: flex; align-items: center; gap: 12rpx; }
@@ -46,6 +46,7 @@
   background: rgba(245, 158, 11, 0.18);
   display: flex; align-items: center; justify-content: center; font-size: 32rpx;
 }
+.credits-icon image { width: 40rpx; height: 40rpx; }
 .credits-row { display: flex; align-items: center; gap: 14rpx; }
 .credits-num { font-size: 24rpx; font-weight: 800; color: var(--text-1); }
 .credits-go { font-size: 20rpx; font-weight: 700; color: var(--brand-text); }
@@ -76,6 +77,7 @@
   width: 60rpx; height: 60rpx; flex: none; border-radius: var(--r-sm);
   display: flex; align-items: center; justify-content: center; font-size: 26rpx;
 }
+.item-icon image { width: 34rpx; height: 34rpx; }
 .ic-green { background: rgba(16, 185, 129, 0.12); }
 .ic-amber { background: rgba(245, 158, 11, 0.12); }
 .ic-purple { background: rgba(168, 85, 247, 0.12); }

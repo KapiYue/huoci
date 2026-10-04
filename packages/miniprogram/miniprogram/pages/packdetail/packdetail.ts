@@ -9,11 +9,12 @@ import * as theme from '../../services/theme';
 import * as tracker from '../../services/tracker';
 import { EV } from '../../shared/events';
 import type { PackWord, WordPack } from '../../services/wordpacks';
+import { guardReleaseFeature } from '../../config/release';
 
 const STATUS_LABEL: Record<PackWord['status'], { label: string; cls: string }> = {
   activated: { label: '已激活', cls: 'activated' },
   learning: { label: '学习中', cls: 'learning' },
-  unlearned: { label: '未学', cls: 'captured' },
+  unlearned: { label: '未学', cls: 'unlearned' },
 };
 
 interface WordVM extends PackWord {
@@ -30,9 +31,11 @@ Page({
     pack: null as (WordPack & { words: WordVM[] }) | null,
     joined: false,
     preview: '',
+    shareVisible: false,
   },
 
   onLoad(query: Record<string, string | undefined>) {
+    if (guardReleaseFeature('wordPacks')) return;
     const id = query.id || '';
     const isShare = query.from === 'share';
 
@@ -91,6 +94,13 @@ Page({
     wx.switchTab({ url: '/pages/today/today' });
   },
 
+  goBack() {
+    wx.navigateBack({ fail: () => wx.switchTab({ url: '/pages/wordpacks/wordpacks' }) });
+  },
+
+  openShare() { this.setData({ shareVisible: true }); },
+  closeShare() { this.setData({ shareVisible: false }); },
+
   /** 移除要二次确认，且说清楚「已经学过的词留在生词本里，不会被删」 */
   remove() {
     wx.showModal({
@@ -115,4 +125,6 @@ Page({
       path: `/pages/packdetail/packdetail?id=${this.data.packId}&from=share`,
     };
   },
+
+  noop() { /* 挡住分享弹层后的滚动 */ },
 });

@@ -3,7 +3,7 @@
   display: flex; align-items: center;
   height: calc(env(safe-area-inset-bottom) + 108rpx);
   padding-bottom: env(safe-area-inset-bottom);
-  background: var(--surface, #fff);
+  background: rgba(255,255,255,.95);
   border-top: 2rpx solid var(--border, #f3e8ff);
   box-shadow: 0 -8rpx 30rpx rgba(147, 51, 234, 0.06);
 }
@@ -12,5 +12,13 @@
   gap: 4rpx; color: var(--text-3, #64748b);
 }
 .tab.is-on { color: var(--brand-700, #7e22ce); }
-.tab-icon { font-size: 36rpx; line-height: 1; }
-.tab-text { font-size: 19rpx; font-weight: 700; }
+.tab-icon-wrap { position: relative; width: 56rpx; height: 56rpx; transition: transform .18s; }
+.tab-icon-wrap.is-on { transform: translateY(-4rpx) scale(1.1); }
+.tab-icon { display: block; width: 56rpx; height: 56rpx; }
+.tab-glow { position: absolute; left: 23rpx; bottom: -7rpx; width: 10rpx; height: 10rpx; border-radius: 50%; background: linear-gradient(90deg,#a855f7,#ec4899); box-shadow: 0 0 14rpx rgba(168,85,247,.8); }
+.tab-text { margin-top: 4rpx; font-size: 19rpx; font-weight: 700; letter-spacing: -1rpx; }
+.tab.is-on .tab-text { font-weight: 900; transform: scale(1.05); }
+
+@media (prefers-color-scheme: dark) {
+  .tabbar { background: rgba(2,6,23,.95); border-color: rgba(30,41,59,.8); }
+}

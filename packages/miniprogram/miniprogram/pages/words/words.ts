@@ -36,18 +36,29 @@ interface Row extends StudyCard {
   /** 底座词与 capture 词的视觉差异是**刻意**的（§5.1 全局视觉主张） */
   isBase: boolean;
   activated: boolean;
+  status: ReturnType<typeof wordStatus>;
+  statusBadge: string;
   statusLabel: string;
   activatedDate: string;
 }
 
 function toRow(c: StudyCard): Row {
   const st = wordStatus(c);
+  const labels = {
+    captured: ['📥', '刚收进'],
+    learning: ['🌱', '学习中'],
+    remembered: ['🧠', '已记住'],
+    activated: ['✨', '活词'],
+    mastered: ['👑', '能说出'],
+  } as const;
   return {
     ...c,
     isBase: c.contextSentence === null && c.contextSource === '首启添加',
     activated: st === 'activated' || st === 'mastered',
-    statusLabel: st === 'activated' || st === 'mastered' ? '活词' : st === 'captured' ? '刚收进' : '学习中',
-    activatedDate: c.activatedAt ? c.activatedAt.slice(0, 10) : '还没激活',
+    status: st,
+    statusBadge: labels[st][0],
+    statusLabel: labels[st][1],
+    activatedDate: c.activatedAt ? '已激活 ✨' : '稳固度未达21天',
   };
 }
 
@@ -70,6 +81,7 @@ Page({
     ready: false,
     /** 词详情抽屉（原型的 Word Detail Drawer） */
     detail: null as Row | null,
+    playingId: '',
   },
 
   onShow() {
@@ -145,9 +157,18 @@ Page({
 
     this.setData({ loading: true });
     try {
+      const mockSummary = words.localMockSummary();
       const [page, summary] = await Promise.all([
         words.fetchWords(this.serverFilter(), 0),
-        learning.fetchHomeSummary(),
+        words.USING_LOCAL_MOCK
+          ? Promise.resolve({
+              data: {
+                total_words: mockSummary.total,
+                activated_count: mockSummary.activated,
+              },
+              stale: false,
+            })
+          : learning.fetchHomeSummary(),
       ]);
       const rows = page.data.map(toRow);
       this.setData({
@@ -206,6 +227,22 @@ Page({
 
   closeDetail() {
     this.setData({ detail: null });
+  },
+
+  playAudio(e: WechatMiniprogram.BaseEvent) {
+    const url = String(e.currentTarget.dataset.url || '');
+    const id = String(e.currentTarget.dataset.id || '');
+    if (!url || this.data.playingId) return;
+    const audio = wx.createInnerAudioContext();
+    this.setData({ playingId: id });
+    audio.src = url;
+    const finish = () => {
+      this.setData({ playingId: '' });
+      audio.destroy();
+    };
+    audio.onEnded(finish);
+    audio.onError(finish);
+    audio.play();
   },
 
   /** 空态的出口（§5.7 R5）。`[09-03]` 阅读器已经实现，直接进页面 */

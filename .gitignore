@@ -28,6 +28,9 @@ docs/
 *.p12
 *.key
 
+# 本机人工复查测试账号凭据（tools/test-accounts.mjs 生成，权限 600）
+.local/
+
 # 微信开发者工具
 packages/miniprogram/project.private.config.json
 

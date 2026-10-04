@@ -7,6 +7,7 @@
     "sync:shared": "node scripts/sync-shared.mjs",
     "sync:wordpack": "node scripts/sync-wordpack.mjs",
     "sync": "npm run sync:shared && npm run sync:wordpack",
+    "test": "node --test scripts/*.test.cjs",
     "typecheck": "npm run sync && tsc -p tsconfig.json --noEmit",
     "check": "node scripts/check-static.mjs",
     "verify": "npm run typecheck && npm run check"

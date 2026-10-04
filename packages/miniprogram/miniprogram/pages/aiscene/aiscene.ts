@@ -16,6 +16,7 @@ import * as theme from '../../services/theme';
 import * as tracker from '../../services/tracker';
 import { EV } from '../../shared/events';
 import type { Scenario, Turn } from '../../services/aiscene';
+import { guardReleaseFeature } from '../../config/release';
 
 interface TurnVM extends Turn { key: string }
 interface PoolItem { term: string; on: boolean }
@@ -65,6 +66,7 @@ Page({
   },
 
   onLoad() {
+    if (guardReleaseFeature('aiPractice')) return;
     const scenes = onboarding.selectedScenes();
     const scenarios = ai.sortedScenarios(scenes);
     this.setData({

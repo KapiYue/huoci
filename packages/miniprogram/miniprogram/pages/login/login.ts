@@ -1,11 +1,8 @@
 // S0 · 身份屏。还原对象：`docs/prototype/src/components/LoginTab.tsx`。
 //
 // 两条路径：
-//   微信一键登录 → 新用户默认路径，**一次点击**（wx.login 静默取 code，不插头像/昵称弹层）
+//   微信快捷登录 → 新用户默认路径，先显示 React 原型的头像/昵称授权层，再调用真实 wx.login
 //   我有词鲸账号 → 邮箱 + 密码 → **跳过 S1–S3**，直接进「今日」（已有学习数据）
-//
-// 昵称不在这里问：网关建 user 时兜底塞 '微信用户'，想改去「我的」。
-// 在这里插一个授权弹层，就把「一次点击」变成三次。
 //
 // `[09-03]` 三处按原型加回来：品牌头 + 分段切换 + 协议勾选；
 //   另加 State A（已登录时的账号管理视图），入口是「我的 → 登录 / 账号管理」。
@@ -21,6 +18,7 @@ import * as theme from '../../services/theme';
 import { EV } from '../../shared/events';
 import { ApiError } from '../../services/types';
 import * as onboarding from '../../services/onboarding';
+import { RELEASE_FEATURES } from '../../config/release';
 
 /** 失败态文案（密码错误、网络失败都要有落点） */
 function explain(e: unknown, wrongCredential: string): string {
@@ -33,13 +31,18 @@ function explain(e: unknown, wrongCredential: string): string {
 Page({
   data: {
     themeClass: '',
+    releaseFeatures: RELEASE_FEATURES,
     tab: 'wechat' as 'wechat' | 'cijing',
     loading: false,
     error: '',
     email: '',
     password: '',
-    agreed: false,
+    agreed: true,
     agreeNotice: false,
+    showWeChatAuthSheet: false,
+    legalModal: '' as '' | 'terms' | 'privacy',
+    selectedAvatarId: 'cat',
+    wechatNickname: '微信学习者',
 
     // State A
     loggedIn: false,
@@ -50,7 +53,7 @@ Page({
     isBound: false,
     summary: learning.EMPTY_SUMMARY,
     credits: 0,
-    mascotMessage: '欢迎来到活词。登录之后，你收下的每个词都存在云端，换设备也在。',
+    mascotMessage: '欢迎来到活词！登录后即可开启云端实时同步，跨端保存生词与激活进度。',
   },
 
   /** 登录成功后要跳回的地址（收到分享的人从这里来） */
@@ -73,7 +76,7 @@ Page({
         isBound: s.provider === 'password',
         email: s.provider === 'password' && s.email ? s.email : '',
         agreed: true, // 已经登录过就是已经同意过，不用再勾一次
-        mascotMessage: `${s.displayName}，欢迎回来。你的学习进度和复习曲线都在云端。`,
+        mascotMessage: `${s.displayName}，欢迎回来！你的学习进度与复习曲线已在云端实时同步。`,
       });
       void this.loadStats();
     }
@@ -90,6 +93,17 @@ Page({
 
   switchTab(e: WechatMiniprogram.BaseEvent) {
     this.setData({ tab: e.currentTarget.dataset.v as 'wechat' | 'cijing', error: '' });
+  },
+
+  rotateMascot() {
+    const messages = [
+      '今天还剩 7 个待复习词，坚持 6 天啦 🔥',
+      '活词 = 记忆稳固度 ≥ 21 天，永不回退 ✨',
+      '遇到不懂的词？去「场景阅读」点一下直接收录 📖',
+      '自评三档：记得 / 有点模糊 / 想不起来 💡',
+    ];
+    const current = messages.indexOf(this.data.mascotMessage);
+    this.setData({ mascotMessage: messages[(current + 1) % messages.length] });
   },
 
   toggleAgree() {
@@ -111,12 +125,32 @@ Page({
     this.setData({ password: e.detail.value, error: '' });
   },
 
-  async loginWithWeChat() {
+  showWeChatLogin() {
     if (this.data.loading || !this.requireAgreement()) return;
+    this.setData({ showWeChatAuthSheet: true, error: '' });
+  },
+
+  closeWeChatLogin() {
+    if (this.data.loading) return;
+    this.setData({ showWeChatAuthSheet: false });
+  },
+
+  selectAvatar(e: WechatMiniprogram.BaseEvent) {
+    this.setData({ selectedAvatarId: String(e.currentTarget.dataset.avatar || 'cat') });
+  },
+
+  onWechatNickname(e: WechatMiniprogram.Input) {
+    this.setData({ wechatNickname: e.detail.value, error: '' });
+  },
+
+  async confirmWeChatLogin() {
+    if (this.data.loading) return;
     this.setData({ loading: true, error: '' });
     try {
-      await auth.loginWithWeChat({});
+      await auth.loginWithWeChat({ nickname: this.data.wechatNickname.trim() || '微信用户' });
       tracker.track(EV.LOGIN_SUCCESS, { provider: 'wechat' });
+      wx.setStorageSync('hc.login.celebrate', Date.now());
+      this.setData({ showWeChatAuthSheet: false });
       // 新用户去首启；已做过首启的（重装、换设备）直接进今日
       this.go(await this.needsOnboarding());
     } catch (e) {
@@ -208,18 +242,16 @@ Page({
   },
 
   openTerms() {
-    wx.showModal({
-      title: '用户服务协议',
-      content: '协议正文待补（备案通过后指向 joy-coder.cn）。要点：小程序只保存你主动收下的词、收词时那句原文与来源标题。',
-      showCancel: false,
-    });
+    this.setData({ legalModal: 'terms' });
   },
 
   openPrivacy() {
-    wx.showModal({
-      title: '个人信息保护政策',
-      content: '我们不读剪贴板、不收集通讯录、不做广告投放。贴进阅读器的正文只留在你手机上，不会上传。',
-      showCancel: false,
-    });
+    this.setData({ legalModal: 'privacy' });
   },
+
+  closeLegal() {
+    this.setData({ legalModal: '' });
+  },
+
+  noop() {},
 });

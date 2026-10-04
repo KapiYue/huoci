@@ -1,16 +1,19 @@
 <!-- ③ 我的生词。还原对象：`docs/prototype/src/components/WordsTab.tsx`。
      capture 词的卡片信息明显比底座词丰富 —— 这个差异是**刻意**的（§5.1）。 -->
-<view class="hc-page words {{themeClass}}">
+<view class="hc-page hc-immersive-page words {{themeClass}}">
 
   <view class="head">
-    <text class="title">我的生词</text>
-    <text class="total hc-mono">已激活 {{activatedTotal}} / 全部 {{total}}</text>
+    <view>
+      <text class="title">我的生词</text>
+      <text class="total">总收录 <text class="hc-mono strong-purple">{{total}}</text> 词 · 活词 <text class="hc-mono strong-green">{{activatedTotal}}</text></text>
+    </view>
+    <view class="context-badge">✦ 语境抓取驱动</view>
   </view>
 
   <view class="searchbar">
     <text class="searchbar-icon">🔍</text>
     <input class="searchbar-input" value="{{query}}" bindinput="onSearch"
-           placeholder="在已加载的词里找" placeholder-class="ph" />
+           placeholder="搜索已收录的英文或中文释义..." placeholder-class="ph" />
     <text class="searchbar-clear" wx:if="{{query}}" bindtap="clearSearch">✕</text>
   </view>
 
@@ -29,7 +32,7 @@
   <!-- 空态：引导指向阅读器，**不是**「装插件」 -->
   <block wx:if="{{ready && view.length === 0}}">
     <view class="empty hc-card" wx:if="{{query}}">
-      <text class="empty-title">已加载的词里没有「{{query}}」</text>
+      <text class="empty-title">没有找到匹配的词汇</text>
       <text class="empty-sub">往下翻加载更多，或者去「查词」直接搜这个词。</text>
       <text class="empty-alt" bindtap="openSearch">去查词 →</text>
     </view>
@@ -54,17 +57,20 @@
     <view class="row-top">
       <text class="term">{{item.term}}</text>
       <text class="phonetic hc-mono" wx:if="{{item.phonetic}}">{{item.phonetic}}</text>
+      <view class="speaker {{playingId === item.wordId ? 'is-on' : ''}}"
+            data-id="{{item.wordId}}" data-url="{{item.audioUrl}}" catchtap="playAudio"><image class="speaker-icon" src="/assets/ui/icon-volume.svg" mode="aspectFit" /></view>
       <view class="grow"></view>
-      <view class="hc-badge st-activated" wx:if="{{item.activated}}">✨ 活词</view>
+      <view class="hc-badge st-{{item.status}}">{{item.statusBadge}} {{item.statusLabel}}</view>
     </view>
 
     <text class="meaning">{{item.meaning}}</text>
 
-    <!-- 原句只有 capture 词有。底座词**不补例句**（附录 C） -->
-    <text class="context" wx:if="{{item.contextSentence}}">{{item.contextSentence}}</text>
-
-    <!-- 来源行：字号可以小，但不能没有 -->
-    <text class="source">{{item.contextSource}}</text>
+    <!-- 非首启词第三行把原句摘要与来源放在同一条独特的紫色来源带中。 -->
+    <view class="context-line" wx:if="{{!item.isBase}}">
+      <text class="context">“{{item.contextSentence || '真实场景收录'}}”</text>
+      <text class="source">{{item.contextSource}}</text>
+    </view>
+    <text class="base-source" wx:else>{{item.contextSource}}</text>
   </view>
 
   <view class="more" wx:if="{{view.length > 0}}">
@@ -76,44 +82,47 @@
   <view class="tail"></view>
 </view>
 
-<!-- 词详情抽屉 -->
+<!-- 词详情弹窗：首启词是精简版，场景词额外展示真实原句与来源。 -->
 <view class="mask" wx:if="{{detail}}" bindtap="closeDetail" catchtouchmove="noop">
   <view class="drawer" catchtap="noop">
     <view class="drawer-head">
-      <text class="drawer-term">{{detail.term}}</text>
-      <text class="drawer-phonetic hc-mono" wx:if="{{detail.phonetic}}">{{detail.phonetic}}</text>
+      <view class="drawer-word">
+        <text class="drawer-term">{{detail.term}}</text>
+        <view class="drawer-speaker" data-id="{{detail.wordId}}" data-url="{{detail.audioUrl}}" catchtap="playAudio"><image class="drawer-speaker-icon" src="/assets/ui/icon-volume.svg" mode="aspectFit" /></view>
+      </view>
+      <view class="drawer-x" bindtap="closeDetail">×</view>
     </view>
+    <text class="drawer-phonetic hc-mono" wx:if="{{detail.phonetic}}">{{detail.phonetic}}<text wx:if="{{detail.pos}}"> · {{detail.pos}}</text></text>
+
+    <view class="drawer-divider"></view>
+    <text class="drawer-caption">中文释义</text>
     <text class="drawer-meaning">{{detail.meaning}}</text>
 
-    <view class="drawer-ctx" wx:if="{{detail.contextSentence}}">
-      <text class="drawer-label">🧭 真实撞见原句与来源</text>
-      <text class="drawer-sentence">"{{detail.contextSentence}}"</text>
-      <text class="drawer-source">{{detail.contextSource}}</text>
-    </view>
-    <view class="drawer-ctx" wx:else>
-      <text class="drawer-label">🏷️ {{detail.contextSource}}</text>
-      <text class="drawer-sentence-plain">这个词来自系统底座词表，没有原句。去阅读器读一篇自己的文章，收到的词就会带上原句。</text>
+    <view class="drawer-ctx">
+      <text class="drawer-label">◎ 来源</text>
+      <text class="drawer-sentence" wx:if="{{detail.contextSentence}}">“{{detail.contextSentence}}”</text>
+      <text class="drawer-source">来源：{{detail.contextSource}}</text>
     </view>
 
     <view class="drawer-stats">
       <view class="ds">
         <text class="ds-label">当前记忆状态</text>
-        <text class="ds-value">{{detail.statusLabel}}</text>
+        <text class="ds-value ds-status">{{detail.statusLabel}}</text>
       </view>
       <view class="ds">
-        <text class="ds-label">成功复习次数</text>
-        <text class="ds-value hc-mono">{{detail.repetitions}}</text>
-      </view>
-      <view class="ds">
-        <text class="ds-label">当前间隔</text>
+        <text class="ds-label">SM-2 复习间隔</text>
         <text class="ds-value hc-mono">{{detail.interval}} 天</text>
       </view>
       <view class="ds">
+        <text class="ds-label">成功复习次数</text>
+        <text class="ds-value hc-mono">{{detail.repetitions}} 次</text>
+      </view>
+      <view class="ds">
         <text class="ds-label">活词激活时间</text>
-        <text class="ds-value">{{detail.activatedDate}}</text>
+        <text class="ds-value ds-activated">{{detail.activatedDate}}</text>
       </view>
     </view>
 
-    <view class="drawer-close" bindtap="closeDetail">收起</view>
+    <view class="drawer-close" bindtap="closeDetail">关闭</view>
   </view>
 </view>
