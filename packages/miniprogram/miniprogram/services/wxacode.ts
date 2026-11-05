@@ -56,7 +56,7 @@ function fileName(scene: string): string {
  * 取一张小程序码，返回**本地文件路径**；拿不到就返回 null。
  *
  * 🔴 **拿不到是常态，不是异常**：小程序首次发布之前 `getwxacodeunlimit` 一定失败
- * （41030），而活词现在还卡在 ICP 备案 → 微信认证 → 首次发布这条链上。
+ * （41030）；备案与微信认证已完成，但首次发布前仍可能因平台规则无法生成。
  * 所以调用方必须能**在没有码的情况下把海报画完**，不能等它、更不能因此报错。
  */
 export async function qrFile(scene: string, page = 'pages/today/today'): Promise<string | null> {

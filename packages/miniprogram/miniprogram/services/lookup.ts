@@ -8,6 +8,7 @@
 
 import * as gw from './gateway';
 import * as words from './words';
+import { pronunciationUrl } from './pronunciation';
 import { ApiError } from './types';
 import type { CijingWord } from '../shared/types';
 
@@ -45,7 +46,9 @@ export async function lookup(word: string): Promise<LookupResult> {
     anonymous: true,
     timeout: 10000,
   });
-  return res.data;
+  // 公开词典或上游词典偶尔不携带音频。查词与点词仍须有发音，且收词后要把
+  // 同一个地址存下来，避免进入生词本后又变成无声词条。
+  return { ...res.data, audioUrl: pronunciationUrl(res.data.audioUrl, term) };
 }
 
 /**

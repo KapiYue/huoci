@@ -33,4 +33,4 @@ export function set(patch: Partial<Prefs>): Prefs {
   const next = { ...get(), ...patch };
   store.write(store.SK.PREFS, next);
   return next;
-}
+} 

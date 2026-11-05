@@ -1,8 +1,33 @@
 node_modules/
+.venv/
 dist/
 build/
 .DS_Store
 *.log
+
+# 仓库只保留可运行的产品/工具代码；说明材料与本地 Codex 配置不公开。
+*.md
+.codex/
+
+# 网关部署与实现只保留在本机，避免公开服务架构、域名与运维细节。
+packages/gateway/
+
+# 对外演示素材不影响产品运行，不进入仓库。
+assets/01-lookup.png
+assets/02-review.png
+assets/03-reader-import.png
+assets/04-context-reading.png
+assets/05-vocabulary-library.png
+assets/huoci-context-loop.gif
+assets/huoci-product-demo-cover.png
+assets/huoci-product-demo.mp4
+assets/huoci-cijing-sync-demo-cover.png
+
+# 词库构建报告是本地生成物，不进入仓库。
+tools/dict-builder/reports/
+
+# 本地视频制作：原始录屏、剪辑分段与导出预览均不进入仓库
+deliverables/video-preview/
 
 # dict-builder：原始词典与中间产物体积巨大，不进仓库
 tools/dict-builder/data/

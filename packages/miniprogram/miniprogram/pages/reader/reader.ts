@@ -12,6 +12,7 @@ import * as theme from '../../services/theme';
 import * as tracker from '../../services/tracker';
 import * as wordsSvc from '../../services/words';
 import * as auth from '../../services/auth';
+import { pronunciationUrl } from '../../services/pronunciation';
 import { EV } from '../../shared/events';
 import type { Token } from '../../services/reader';
 
@@ -19,6 +20,7 @@ interface TokenVM extends Token { hit: boolean }
 interface Picked {
   term: string;
   phonetic: string;
+  audioUrl: string;
   meaning: string;
   sentence: string;
   loading: boolean;
@@ -28,7 +30,7 @@ interface Picked {
 }
 
 const EMPTY_PICKED: Picked = {
-  term: '', phonetic: '', meaning: '', sentence: '',
+  term: '', phonetic: '', audioUrl: '', meaning: '', sentence: '',
   loading: false, saving: false, saved: false, error: '',
 };
 
@@ -162,6 +164,7 @@ Page({
           ...this.data.picked,
           term: r.term || term,
           phonetic: r.phonetic || '',
+          audioUrl: pronunciationUrl(r.audioUrl, r.term || term),
           // 有语境释义就用语境释义 —— 这一层正是阅读器比查词多出来的东西
           meaning: r.contextualMeaning || r.primaryMeaning || '待补充',
           sentence,
@@ -179,6 +182,20 @@ Page({
     const p = this.data.picked;
     this.setData({ picked: { ...p, loading: true, error: '' } });
     void this.runLookup(p.term.toLowerCase(), p.sentence);
+  },
+
+  playPronunciation() {
+    const url = this.data.picked.audioUrl;
+    if (!url) return;
+    const audio = wx.createInnerAudioContext();
+    audio.src = url;
+    const finish = () => audio.destroy();
+    audio.onEnded(finish);
+    audio.onError(() => {
+      finish();
+      wx.showToast({ title: '发音加载失败，请稍后重试', icon: 'none' });
+    });
+    audio.play();
   },
 
   closePopup() {

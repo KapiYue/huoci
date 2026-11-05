@@ -100,6 +100,7 @@
       <view class="sheet-head">
         <text class="sheet-term">{{picked.term}}</text>
         <text class="sheet-phonetic hc-mono">{{picked.phonetic}}</text>
+        <view class="sheet-speak" wx:if="{{picked.audioUrl}}" bindtap="playPronunciation">🔊</view>
       </view>
 
       <view class="sheet-loading" wx:if="{{picked.loading}}">

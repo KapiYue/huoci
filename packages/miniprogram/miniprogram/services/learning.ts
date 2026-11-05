@@ -4,6 +4,7 @@
 // 读缓存（T1-c）：断网时返回旧数据 + 一个离线标记，好过一片空白。
 
 import * as gw from './gateway';
+import { pronunciationUrl } from './pronunciation';
 import * as store from './storage';
 import * as queue from './reviewQueue';
 import { uuid } from '../utils/uuid';
@@ -123,14 +124,6 @@ function displayPhonetic(value: string | null, term: string): string {
       .replace(/ɪ(?=\s|;|$)/g, 'i');
   }
   return `/${inner || '—'}/`;
-}
-
-/**
- * 历史数据的 audio_url 大多为空。先使用库内音频；空值时用词典的美音朗读地址，
- * 让原型中始终存在的喇叭在小程序里也真正可点、可播放。
- */
-function pronunciationUrl(value: string | null, term: string): string {
-  return value || `https://dict.youdao.com/dictvoice?audio=${encodeURIComponent(term)}&type=2`;
 }
 
 /**
