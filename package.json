@@ -7,6 +7,8 @@
     "packages/*"
   ],
   "scripts": {
+    "dev:gateway": "bash packages/gateway/start-local.sh",
+    "stop:gateway": "bash packages/gateway/stop-local.sh",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "test": "npm run test --workspaces --if-present",
     "parity": "node tools/ui-parity/cli.mjs",

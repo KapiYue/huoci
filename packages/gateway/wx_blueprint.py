@@ -4,10 +4,9 @@
     /auth/v1  /rest/v1  → nginx 无状态透传（开 keepalive），**不进 Flask**
     /wx/*                → 本机 Flask（有状态：AppSecret、openid 映射、access_token 缓存）
 
-T3 的登录方案是 **B：按 openid 派生服务端密码 + signInWithPassword**。
-放弃 A（magiclink）的理由：网关本来就常驻 service_role，持有它即可对任意用户
-generateLink + verifyOtp，A 声称的「不用保管能登录全站的 secret」根本不成立；
-而 B 少一跳跨境、复用已验证的密码链路、行为可预测。
+微信独立账号沿用按微信身份派生的合成邮箱登录。已关联到词鲸邮箱账号的微信身份则由网关验证
+新的微信 code 后，为映射到的既有 auth user 生成一次性登录凭据并立即兑换 Supabase session。
+一次性凭据仅在服务器内存中的单次请求内存在，绝不写日志、数据库或响应。
 
 两方案通吃的三个坑，本文件都处理了：
   1. **必须造合成邮箱** —— Supabase 的 password 登录以 email 为主键
@@ -22,6 +21,7 @@ import base64
 import hashlib
 import hmac
 import json
+import logging
 import os
 import string
 import time
@@ -31,6 +31,7 @@ from urllib import error, parse, request as urlrequest
 from flask import Blueprint, jsonify, request as flask_request
 
 wx_bp = Blueprint("huoci_wx", __name__, url_prefix="/wx")
+logger = logging.getLogger(__name__)
 
 # 合成邮箱的域。用自有域名的子域，避免撞上真实邮箱，也避免被 Supabase 判为无效域。
 SYNTHETIC_EMAIL_DOMAIN = os.getenv("HUOCI_WX_EMAIL_DOMAIN", "wx.joy-coder.cn")
@@ -138,11 +139,68 @@ def _sign_in(email: str, password: str) -> tuple[int, Any]:
 
 
 def _find_identity(openid: str) -> dict[str, Any] | None:
-    q = parse.urlencode({"openid": f"eq.{openid}", "select": "openid,user_id,secret_version"})
+    q = parse.urlencode({"openid": f"eq.{openid}", "select": "openid,unionid,user_id,secret_version"})
     status, rows = _get_json(f"{_supabase()}/rest/v1/hc_wechat_identities?{q}", _service_headers())
     if status != 200 or not rows:
         return None
     return rows[0]
+
+
+def _find_identity_for_user(user_id: str) -> dict[str, Any] | None:
+    """查当前账号已有的微信映射；attach 必须在写前检查这条唯一约束。"""
+    q = parse.urlencode({"user_id": f"eq.{user_id}", "select": "openid,unionid,user_id,secret_version"})
+    status, rows = _get_json(f"{_supabase()}/rest/v1/hc_wechat_identities?{q}", _service_headers())
+    if status != 200 or not rows:
+        return None
+    return rows[0]
+
+
+def _find_linked_cijing_user(wechat_user_id: str) -> str | None:
+    """返回已关联微信账号对应的规范词鲸账号。
+
+    微信认证映射和账号关联刻意分表：前者永远指回微信独立账号，后者才决定
+    本次微信登录应签发哪个账号的 session。查询失败时不能猜测或回退到另一账号。
+    """
+    q = parse.urlencode({
+        "wechat_user_id": f"eq.{wechat_user_id}",
+        "select": "cijing_user_id",
+        "limit": "1",
+    })
+    status, rows = _get_json(f"{_supabase()}/rest/v1/hc_account_links?{q}", _service_headers())
+    if status != 200:
+        raise RuntimeError("无法读取账号关联状态")
+    if not rows:
+        return None
+    cijing_user_id = str(rows[0].get("cijing_user_id") or "").strip()
+    if not cijing_user_id:
+        raise RuntimeError("账号关联记录无效")
+    return cijing_user_id
+
+
+def _is_linked_cijing_user(cijing_user_id: str) -> bool:
+    q = parse.urlencode({"cijing_user_id": f"eq.{cijing_user_id}", "select": "cijing_user_id", "limit": "1"})
+    status, rows = _get_json(f"{_supabase()}/rest/v1/hc_account_links?{q}", _service_headers())
+    if status != 200:
+        raise RuntimeError("无法读取账号关联状态")
+    return bool(rows)
+
+
+def _find_linked_wechat_user(cijing_user_id: str) -> str | None:
+    """按规范词鲸账号查询关联的微信独立账号；绝不把该 ID 返回给客户端。"""
+    q = parse.urlencode({
+        "cijing_user_id": f"eq.{cijing_user_id}",
+        "select": "wechat_user_id",
+        "limit": "1",
+    })
+    status, rows = _get_json(f"{_supabase()}/rest/v1/hc_account_links?{q}", _service_headers())
+    if status != 200:
+        raise RuntimeError("无法读取账号关联状态")
+    if not rows:
+        return None
+    wechat_user_id = str(rows[0].get("wechat_user_id") or "").strip()
+    if not wechat_user_id:
+        raise RuntimeError("账号关联记录无效")
+    return wechat_user_id
 
 
 def _create_user(email: str, password: str, display_name: str, avatar_url: str | None) -> None:
@@ -166,6 +224,10 @@ def _create_user(email: str, password: str, display_name: str, avatar_url: str |
     raise RuntimeError(f"建用户失败：{status} {data}")
 
 
+class IdentityConflict(RuntimeError):
+    """映射唯一约束冲突；调用方应返回可理解的 409，而不是将其伪装成 502。"""
+
+
 def _link_identity(openid: str, unionid: str | None, user_id: str, version: int = 1) -> None:
     payload = {
         "openid": openid,
@@ -178,6 +240,8 @@ def _link_identity(openid: str, unionid: str | None, user_id: str, version: int 
         payload,
         {**_service_headers(), "Prefer": "resolution=merge-duplicates"},
     )
+    if status == 409 or (isinstance(data, dict) and data.get("code") == "23505"):
+        raise IdentityConflict("微信身份映射冲突")
     if status not in (200, 201, 204):
         raise RuntimeError(f"写 hc_wechat_identities 失败：{status} {data}")
 
@@ -188,6 +252,91 @@ def _user_from_token(access_token: str) -> dict[str, Any] | None:
         {**_anon_headers(), "Authorization": f"Bearer {access_token}"},
     )
     return data if status == 200 and isinstance(data, dict) else None
+
+
+def _execute_account_link(operation: str, wechat_user_id: str, cijing_user_id: str,
+                          requested_by: str, confirmation_version: str) -> dict[str, Any]:
+    """调用数据库内的单事务迁移入口；请求体不包含任何身份凭据。"""
+    status, data = _post_json(
+        f"{_supabase()}/rest/v1/rpc/hc_execute_account_link",
+        {
+            "p_operation": operation,
+            "p_wechat_user_id": wechat_user_id,
+            "p_cijing_user_id": cijing_user_id,
+            "p_requested_by": requested_by,
+            "p_confirmation_version": confirmation_version,
+        },
+        _service_headers(),
+    )
+    if status == 409:
+        # 请求前已按两端分别检查。这里代表并发竞争，不能臆测成“第三个账号”。
+        raise IdentityConflict("关联状态刚刚发生变化，请刷新后重试")
+    if status != 200 or not isinstance(data, dict) or data.get("state") != "committed":
+        raise RuntimeError("账号数据处理未完成，请稍后重试")
+    return data
+
+
+def _admin_user(user_id: str) -> dict[str, Any] | None:
+    """仅服务端按 UUID 取认证用户；调用方永远不能指定要签发会话的 user_id。"""
+    status, data = _get_json(f"{_supabase()}/auth/v1/admin/users/{parse.quote(user_id, safe='')}", _service_headers())
+    return data if status == 200 and isinstance(data, dict) else None
+
+
+def _issue_mapped_session(user_id: str) -> dict[str, Any]:
+    """为已由新微信 code 证明控制权的映射用户签发常规 Supabase 可刷新 session。
+
+    generate_link 的 hashed_token 和 verify 返回的 session 都不落盘、不记录日志。这个函数只能在
+    hc_wechat_identities 的服务端查询已确认 user_id 后调用，绝不接受客户端提供的 ID 或邮箱。
+    """
+    user = _admin_user(user_id)
+    email = str((user or {}).get("email") or "").strip()
+    if not email:
+        raise RuntimeError("关联账号缺少可用登录邮箱")
+
+    status, generated = _post_json(
+        f"{_supabase()}/auth/v1/admin/generate_link",
+        {"type": "magiclink", "email": email},
+        _service_headers(),
+    )
+    properties = (generated or {}).get("properties") if isinstance(generated, dict) else None
+    token_hash = (properties or {}).get("hashed_token") if isinstance(properties, dict) else None
+    verification_type = (properties or {}).get("verification_type") if isinstance(properties, dict) else None
+    if status not in (200, 201) or not token_hash or not verification_type:
+        raise RuntimeError("无法签发关联账号会话")
+
+    status, session = _post_json(
+        f"{_supabase()}/auth/v1/verify",
+        {"token_hash": token_hash, "type": verification_type},
+        _anon_headers(),
+    )
+    if status != 200 or not isinstance(session, dict) or not ((session.get("user") or {}).get("id")):
+        raise RuntimeError("无法兑换关联账号会话")
+    if str((session.get("user") or {}).get("id")) != user_id:
+        raise RuntimeError("关联账号会话校验失败")
+    return session
+
+
+def _issue_wechat_identity_session(identity: dict[str, Any]) -> dict[str, Any]:
+    """用刚验证的微信身份登录其独立账号，不依赖邮件 magic link。
+
+    解绑时如果先提交数据搬运、再走 magic-link 兑换，后者任何瞬时故障都会让数据库已
+    解绑而客户端仍保存旧的词鲸 session。微信独立账号本来就有服务端派生的密码，且
+    openid 已由本次新 code 证明控制权，因此直接登录更可靠，也让会话可在事务前备好。
+    """
+    openid = str(identity.get("openid") or "")
+    user_id = str(identity.get("user_id") or "")
+    try:
+        version = int(identity.get("secret_version") or 1)
+    except (TypeError, ValueError) as exc:
+        raise RuntimeError("微信身份映射版本无效") from exc
+    if not openid or not user_id or version < 1:
+        raise RuntimeError("微信身份映射无效")
+    status, session = _sign_in(_synthetic_email(openid), _derive_password(openid, version))
+    if status != 200 or not isinstance(session, dict):
+        raise RuntimeError("无法签发微信账号会话")
+    if str((session.get("user") or {}).get("id") or "") != user_id:
+        raise RuntimeError("微信账号会话校验失败")
+    return session
 
 
 # ─────────────────────────── 端点 ───────────────────────────
@@ -207,11 +356,8 @@ def wx_login():
 
     openid = session_info["openid"]
     unionid = session_info.get("unionid")
-    email = _synthetic_email(openid)
 
     identity = _find_identity(openid)
-    version = int(identity["secret_version"]) if identity else 1
-    password = _derive_password(openid, version)
 
     # 建号与写映射不是一个事务。原来的顺序（建号 → 立刻写映射）一旦在中间失败，
     # 就留下一个没有映射行的 auth 账号：下次重来仍然查不到 identity，于是再建号，
@@ -219,43 +365,173 @@ def wx_login():
     # 现在改成：建号容忍已存在 → 先登录 → 用 token 里的 user.id 补写映射。
     # 任何一步失败，下一次重试都能自愈。
     if identity is None:
+        email = _synthetic_email(openid)
+        version = 1
+        password = _derive_password(openid, version)
         display_name = (body.get("nickname") or "").strip() or "微信用户"
         try:
             _create_user(email, password, display_name, body.get("avatar_url"))
         except RuntimeError as exc:
             return jsonify({"message": str(exc)}), 502
 
-    status, token = _sign_in(email, password)
-    if status != 200:
-        # 密码对不上通常意味着 secret 轮转过但 secret_version 没升。
-        # 这里不静默重试——静默重试会把「密钥配错」伪装成偶发失败。
-        return jsonify({"message": "微信登录失败，请稍后重试", "detail": token}), 502
+    if identity is not None:
+        try:
+            wechat_user_id = str(identity["user_id"])
+            # 关联后，认证映射仍指向微信独立账号；只有 session 的签发对象切换到
+            # 关联关系指定的规范词鲸账号。解除关联后查询不到关系，自动恢复微信账号。
+            linked_cijing_user_id = _find_linked_cijing_user(wechat_user_id)
+            token = (_issue_mapped_session(linked_cijing_user_id)
+                     if linked_cijing_user_id else _issue_wechat_identity_session(identity))
+        except RuntimeError as exc:
+            logger.warning("wx_login_mapped_session_failed")
+            return jsonify({"message": str(exc)}), 502
+    else:
+        status, token = _sign_in(email, password)
+        if status != 200:
+            # 密码对不上通常意味着 secret 轮转过但 secret_version 没升。
+            # 这里不静默重试——静默重试会把「密钥配错」伪装成偶发失败。
+            return jsonify({"message": "微信登录失败，请稍后重试"}), 502
 
     if identity is None:
         user_id = str(((token or {}).get("user") or {}).get("id") or "")
         if not user_id:
-            return jsonify({"message": "登录返回里没有 user.id", "detail": token}), 502
+            return jsonify({"message": "登录返回异常，请稍后重试"}), 502
         try:
             _link_identity(openid, unionid, user_id, version)
         except RuntimeError as exc:
             return jsonify({"message": str(exc)}), 502
 
-    # unionid 可能是这次才拿到的（用户刚关注了同主体的公众号），顺手补写
-    if unionid and identity is not None and not identity.get("unionid"):
-        try:
-            _link_identity(openid, unionid, identity["user_id"], version)
-        except RuntimeError:
-            pass
+    # 已有映射是认证记录，不因一次登录重建、补写或改指向。特别是历史 /wx/attach
+    # 映射必须原样保留；是否关联学习数据由 hc_account_links 单独表示。
 
-    return jsonify({"openid": openid, "unionid": unionid, "session": token})
+    # 身份凭据只保存在服务端映射表；客户端只需要常规 Supabase session。
+    return jsonify({"session": token})
+
+
+@wx_bp.post("/account-link/status")
+def account_link_status():
+    """返回当前微信身份的关联状态，不暴露认证身份凭据或另一账号的资料。"""
+    auth_header = flask_request.headers.get("Authorization", "")
+    if not auth_header.lower().startswith("bearer "):
+        return jsonify({"message": "缺少登录态"}), 401
+    user = _user_from_token(auth_header[7:].strip())
+    if not user or not user.get("id"):
+        return jsonify({"message": "登录态无效"}), 401
+    try:
+        user_id = str(user["id"])
+        cijing_user_id = _find_linked_cijing_user(user_id)
+        linked = cijing_user_id is not None or _is_linked_cijing_user(user_id)
+    except IdentityConflict as exc:
+        return jsonify({"message": str(exc)}), 409
+    except RuntimeError as exc:
+        logger.warning("wx_account_link_status_failed")
+        return jsonify({"message": str(exc)}), 502
+    return jsonify({"linked": linked})
+
+
+ACCOUNT_LINK_CONFIRMATION_VERSION = "2026-11-06"
+
+
+@wx_bp.post("/account-link/confirm")
+def confirm_account_link():
+    """验证微信新 code、词鲸密码和主动确认后，在数据库内完成关联。"""
+    auth_header = flask_request.headers.get("Authorization", "")
+    if not auth_header.lower().startswith("bearer "):
+        return jsonify({"message": "缺少登录态"}), 401
+    wechat_user = _user_from_token(auth_header[7:].strip())
+    if not wechat_user or not wechat_user.get("id"):
+        return jsonify({"message": "登录态无效"}), 401
+    body = flask_request.get_json(silent=True) or {}
+    if body.get("confirmed") is not True:
+        return jsonify({"message": "请先阅读并确认数据处理说明"}), 400
+    if body.get("confirmation_version") != ACCOUNT_LINK_CONFIRMATION_VERSION:
+        return jsonify({"message": "关联说明已更新，请重新确认"}), 400
+    code = str(body.get("code") or "").strip()
+    email = str(body.get("email") or "").strip()
+    password = body.get("password")
+    if not code or not email or not isinstance(password, str) or not password:
+        return jsonify({"message": "请完成微信验证和词鲸账号验证"}), 400
+    try:
+        identity = _find_identity(_code2session(code)["openid"])
+        if not identity or str(identity.get("user_id")) != str(wechat_user["id"]):
+            return jsonify({"message": "微信身份与当前账号不一致"}), 409
+        status, cijing_session = _sign_in(email, password)
+        cijing_user_id = str(((cijing_session or {}).get("user") or {}).get("id") or "")
+        if status != 200 or not cijing_user_id or cijing_user_id == str(wechat_user["id"]):
+            return jsonify({"message": "词鲸账号验证失败"}), 401
+        wechat_user_id = str(wechat_user["id"])
+        linked_cijing_user_id = _find_linked_cijing_user(wechat_user_id)
+        linked_wechat_user_id = _find_linked_wechat_user(cijing_user_id)
+        if linked_cijing_user_id == cijing_user_id and linked_wechat_user_id == wechat_user_id:
+            # 同一对账号的重复确认（例如网络在响应前断开）安全地返回既有规范会话。
+            return jsonify({"session": cijing_session, "linked": True, "idempotent": True})
+        if linked_cijing_user_id is not None:
+            return jsonify({"message": "当前微信账号已关联其他词鲸账号，请先解除原有关联"}), 409
+        if linked_wechat_user_id is not None:
+            return jsonify({"message": "当前词鲸账号已关联其他微信账号，请先在原微信账号解除关联"}), 409
+        _execute_account_link("link", wechat_user_id, cijing_user_id,
+                              str(wechat_user["id"]), ACCOUNT_LINK_CONFIRMATION_VERSION)
+        # 密码验证返回的 session 已是规范账号 session；不回传密码、code 或任何微信身份字段。
+        return jsonify({"session": cijing_session, "linked": True})
+    except IdentityConflict as exc:
+        return jsonify({"message": str(exc)}), 409
+    except RuntimeError as exc:
+        logger.warning("wx_account_link_failed")
+        return jsonify({"message": str(exc)}), 502
+    except Exception:  # 微信上游错误与无效 code 不向客户端泄漏内部信息
+        logger.warning("wx_account_link_verification_failed")
+        return jsonify({"message": "微信验证失败，请重新发起关联"}), 502
+
+
+@wx_bp.post("/account-link/unlink")
+def unlink_account_link():
+    """以新的微信 code 确认身份后复制数据回微信账号并移除关联。"""
+    auth_header = flask_request.headers.get("Authorization", "")
+    if not auth_header.lower().startswith("bearer "):
+        return jsonify({"message": "缺少登录态"}), 401
+    cijing_user = _user_from_token(auth_header[7:].strip())
+    if not cijing_user or not cijing_user.get("id"):
+        return jsonify({"message": "登录态无效"}), 401
+    body = flask_request.get_json(silent=True) or {}
+    if body.get("confirmed") is not True or body.get("confirmation_version") != ACCOUNT_LINK_CONFIRMATION_VERSION:
+        return jsonify({"message": "请阅读并确认解绑说明"}), 400
+    code = str(body.get("code") or "").strip()
+    if not code:
+        return jsonify({"message": "缺少微信验证"}), 400
+    try:
+        identity = _find_identity(_code2session(code)["openid"])
+        if not identity:
+            return jsonify({"message": "未找到微信身份"}), 409
+        wechat_user_id = str(identity["user_id"])
+        # 必须在迁移事务前换好微信独立账号会话。否则数据已经复制并解除关联后才
+        # 发现 session 兑换失败，客户端会误以为解绑失败而继续把旧词鲸 session 当微信账号使用。
+        wechat_session = _issue_wechat_identity_session(identity)
+        linked_cijing_user_id = _find_linked_cijing_user(wechat_user_id)
+        if linked_cijing_user_id is None:
+            # 兼容旧版“数据库已提交、会话兑换失败”的半完成请求：本次新 code 已证明
+            # 微信控制权，安全地交付本应返回的独立账号 session。
+            return jsonify({"session": wechat_session, "linked": False, "idempotent": True})
+        if linked_cijing_user_id != str(cijing_user["id"]):
+            return jsonify({"message": "当前账号没有这项微信关联"}), 409
+        _execute_account_link("unlink", wechat_user_id, str(cijing_user["id"]),
+                              str(cijing_user["id"]), ACCOUNT_LINK_CONFIRMATION_VERSION)
+        return jsonify({"session": wechat_session, "linked": False})
+    except IdentityConflict as exc:
+        return jsonify({"message": str(exc)}), 409
+    except RuntimeError as exc:
+        logger.warning("wx_account_unlink_failed")
+        return jsonify({"message": str(exc)}), 502
+    except Exception:
+        logger.warning("wx_account_unlink_verification_failed")
+        return jsonify({"message": "微信验证失败，请重新发起解绑"}), 502
 
 
 @wx_bp.post("/attach")
 def wx_attach():
-    """把 openid 挂到**当前已登录**的账号上（邮箱登录的老词鲸用户走这条）。
+    """兼容旧客户端：以新的微信 code 为当前 JWT 补齐身份映射。
 
-    §5.3 的红字：msgSecCheck v2 必传 openid。邮箱登录的用户若没走过 wx.login，
-    网关手里没有 openid，一调 AI 内容就炸。**极易漏。**
+    这是身份映射，不是账号关联，更不会合并学习数据。已有同一映射直接成功；任一
+    方向冲突均返回 409，保留既有映射并留待人工处理。
     """
     auth_header = flask_request.headers.get("Authorization", "")
     if not auth_header.lower().startswith("bearer "):
@@ -277,18 +553,31 @@ def wx_attach():
         return jsonify({"message": str(exc)}), 502
 
     openid = session_info["openid"]
-    existing = _find_identity(openid)
-    if existing and existing["user_id"] != user["id"]:
-        # 一个微信只能绑一个账号（hc_wechat_identities.user_id 上的 UNIQUE 是同一条规则的另一半）
+    existing_openid = _find_identity(openid)
+    if existing_openid and existing_openid["user_id"] != user["id"]:
+        logger.warning("wx_attach_identity_conflict direction=openid_already_mapped")
         return jsonify({"message": "这个微信已经绑定了另一个账号"}), 409
 
+    existing_user = _find_identity_for_user(str(user["id"]))
+    if existing_user and existing_user["openid"] != openid:
+        logger.warning("wx_attach_identity_conflict direction=account_already_mapped")
+        return jsonify({"message": "当前账号已经绑定了另一个微信"}), 409
+
+    # 同一 openid → 同一 user_id 是严格幂等：不重写 unionid / secret_version，
+    # 也不依赖 upsert 的合并语义，避免历史认证映射被意外改动。
+    if existing_openid:
+        return jsonify({"idempotent": True})
+
     try:
-        _link_identity(openid, session_info.get("unionid"), user["id"],
-                       int(existing["secret_version"]) if existing else 1)
+        _link_identity(openid, session_info.get("unionid"), str(user["id"]))
+    except IdentityConflict:
+        # 预检和 INSERT 之间仍可能有并发请求；将数据库唯一约束翻译成稳定的产品错误。
+        logger.warning("wx_attach_identity_conflict direction=insert_race")
+        return jsonify({"message": "微信身份映射发生冲突，请联系支持处理"}), 409
     except RuntimeError as exc:
         return jsonify({"message": str(exc)}), 502
 
-    return jsonify({"openid": openid})
+    return jsonify({"idempotent": False})
 
 
 # ─────────────────────────── 内容审核 ───────────────────────────

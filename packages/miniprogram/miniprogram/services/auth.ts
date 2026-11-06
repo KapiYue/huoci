@@ -5,7 +5,7 @@
 //                   → service_role 查/建 auth user（按 openid 派生服务端密码）→ 原生 session
 //   [我有词鲸账号]  邮箱 + 密码，直打 /auth/v1/token?grant_type=password，零后端开发
 //
-// 两条登录路径都记录微信 openid，保证账号身份映射完整。
+// 微信身份映射仅由网关维护；客户端不保存 openid / unionid 等身份凭据。
 
 import * as gw from './gateway';
 import * as store from './storage';
@@ -23,11 +23,10 @@ interface SupabaseTokenResponse {
   };
 }
 
-interface WxLoginResponse {
-  openid: string;
-  unionid: string | null;
-  session: SupabaseTokenResponse;
-}
+interface WxLoginResponse { session: SupabaseTokenResponse; }
+interface AccountLinkResponse { session: SupabaseTokenResponse; linked: boolean; }
+
+export const ACCOUNT_LINK_CONFIRMATION_VERSION = '2026-11-06';
 
 function toSession(r: SupabaseTokenResponse, provider: Session['provider']): Session {
   return {
@@ -44,6 +43,13 @@ function toSession(r: SupabaseTokenResponse, provider: Session['provider']): Ses
   };
 }
 
+/** 切换账号时先清除上一账号的可缓存数据；同一账号刷新会话时不动缓存。 */
+function saveSession(session: Session): void {
+  const previous = gw.getSession();
+  if (previous && previous.userId !== session.userId) store.clearAccountData();
+  gw.setSession(session);
+}
+
 /** wx.login 拿一次性 code。code 五分钟有效且只能用一次。 */
 function getWxCode(): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -55,10 +61,6 @@ function getWxCode(): Promise<string> {
       fail: () => reject(new ApiError('network', 0, '微信登录失败，请检查网络')),
     });
   });
-}
-
-export function getOpenid(): string | null {
-  return store.read<string | null>(store.SK.OPENID, null);
 }
 
 /**
@@ -75,9 +77,8 @@ export async function loginWithWeChat(profile: {
     { code, nickname: profile.nickname, avatar_url: profile.avatarUrl },
     true
   );
-  store.write(store.SK.OPENID, res.openid);
   const session = toSession(res.session, 'wechat');
-  gw.setSession(session);
+  saveSession(session);
   return session;
 }
 
@@ -89,29 +90,63 @@ export async function loginWithPassword(email: string, password: string): Promis
     anonymous: true,
   });
   const session = toSession(res, 'password');
-  gw.setSession(session);
-  // 邮箱路径同样补齐微信身份映射。
-  await attachOpenid();
+  saveSession(session);
+  // 正式关联必须由“关联词鲸账号”入口完成双重验证。不得在普通邮箱登录时
+  // 自动调用旧版 /wx/attach，否则一个已有微信独立账号会被误判为第三方冲突。
   return session;
 }
 
 /**
- * 把当前微信 openid 绑到已登录的 auth user 上（写 hc_wechat_identities）。
- * 失败不抛：补充微信身份映射不应阻断邮箱登录。
+ * 以新的微信 code 为当前已登录账号补齐服务端身份映射。
+ * 失败不抛：旧客户端的兼容映射不应阻断邮箱登录。
  */
 export async function attachOpenid(): Promise<void> {
   try {
     const code = await getWxCode();
-    const res = await gw.wxApi<{ openid: string }>('/attach', { code });
-    store.write(store.SK.OPENID, res.openid);
+    await gw.wxApi<{ idempotent: boolean }>('/attach', { code });
   } catch (e) {
     console.warn('[auth] attachOpenid 失败，微信身份映射暂未补齐', e);
   }
 }
 
+/** 当前会话是否处于微信与词鲸账号的已关联状态。 */
+export async function getAccountLinkStatus(): Promise<{ linked: boolean }> {
+  return gw.wxApi<{ linked: boolean }>('/account-link/status', {});
+}
+
+/**
+ * 主动关联：同一请求内使用新的微信 code 和词鲸密码完成双重控制权验证。
+ * 密码只交给认证端点，不写入存储、日志或错误消息。
+ */
+export async function confirmAccountLink(email: string, password: string): Promise<Session> {
+  const code = await getWxCode();
+  const response = await gw.wxApi<AccountLinkResponse>('/account-link/confirm', {
+    code,
+    email,
+    password,
+    confirmed: true,
+    confirmation_version: ACCOUNT_LINK_CONFIRMATION_VERSION,
+  });
+  const session = toSession(response.session, 'wechat');
+  saveSession(session);
+  return session;
+}
+
+/** 解绑会复制当前规范账号数据回微信账号，并切换到解绑后的微信账号会话。 */
+export async function unlinkAccount(): Promise<Session> {
+  const code = await getWxCode();
+  const response = await gw.wxApi<AccountLinkResponse>('/account-link/unlink', {
+    code,
+    confirmed: true,
+    confirmation_version: ACCOUNT_LINK_CONFIRMATION_VERSION,
+  });
+  const session = toSession(response.session, 'wechat');
+  saveSession(session);
+  return session;
+}
+
 export function logout(): void {
   gw.setSession(null);
-  store.remove(store.SK.OPENID);
   store.clearAccountData();
   // ⚠️ 故意不清 REVIEW_QUEUE：条目已带 userId，下一账号不会补发；
   // 原账号再登录时仍能继续。

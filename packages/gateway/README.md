@@ -1,5 +1,17 @@
 # 活词网关
 
+## 本地开发
+
+活词是词鲸的微信小程序端：本地 Flask 网关监听 `127.0.0.1:5001`，认证与数据服务使用词鲸主项目同一套 Supabase 开发配置。请从仓库根目录运行：
+
+```bash
+npm run dev:gateway
+```
+
+停止时运行 `npm run stop:gateway`。该命令只会向监听网关端口的 `packages.gateway.dev_server` 进程发送正常退出信号；自定义端口时，启动和停止命令都要使用相同的 `HUOCI_GATEWAY_PORT`。
+
+脚本读取相邻 `../cijing/.env`，不会读取本目录中可能被模板覆盖的 `packages/gateway/.env`。启动后可用 `curl --noproxy '*' http://127.0.0.1:5001/healthz` 检查。若要单独维护活词配置，必须填齐 `packages/gateway/.env` 的全部私有变量，不能保留 `YOUR_PROJECT` 等模板占位值。
+
 `design.md` §12.1 T8。**nginx 唯一入口 + location 分流**，不是「Flask 全代理」。
 
 > **要把它装到服务器上 → `docs/gateway-deployment.md`**（初始化 / 证书 / nginx / systemd / 验收 / 运维）。
@@ -16,7 +28,7 @@
 
 | 文件 | 作用 |
 |---|---|
-| `wx_blueprint.py` | Flask Blueprint，提供 `/wx/login` `/wx/attach` `/wx/msgseccheck` |
+| `wx_blueprint.py` | Flask Blueprint，提供 `/wx/login` `/wx/attach` `/wx/account-link/*` `/wx/msgseccheck` |
 | `functions_blueprint.py` | Flask Blueprint，提供 `/functions/v1/<name>` 的**过检代理**（白名单） |
 | `nginx/huoci.conf` | nginx 站点配置 |
 | `nginx/joy-coder-cn.conf` | `joy-coder.cn` + `www` 静态说明站配置（与 API 网关分开） |
@@ -60,8 +72,8 @@ Flask 里那两个透传路由就只在本地开发时用得上了。
 ```jsonc
 // 请求（匿名）
 { "code": "wx.login 拿的 code", "nickname": "可选", "avatar_url": "可选" }
-// 响应
-{ "openid": "...", "unionid": null, "session": { "access_token": "...", "refresh_token": "...", "expires_in": 3600, "user": {...} } }
+// 响应：只返回标准 Supabase session，不返回微信身份凭据
+{ "session": { "access_token": "...", "refresh_token": "...", "expires_in": 3600, "user": {...} } }
 ```
 
 登录方案是 **T3 的 B：按 openid 派生服务端密码 + signInWithPassword**。
@@ -70,7 +82,19 @@ Flask 里那两个透传路由就只在本地开发时用得上了。
 
 ### `POST /wx/attach`
 
-把 openid 挂到**已登录**账号上（邮箱登录的老词鲸用户走这条）。需要 `Authorization: Bearer`。
+兼容旧客户端：用新的微信 `code` 为**已登录**账号补齐微信身份映射（邮箱登录的老词鲸用户走这条）。需要
+`Authorization: Bearer`。这不是账号关联，也不会合并学习数据。
+
+同一 `openid → user_id` 重复提交返回成功且不重写 `unionid` / `secret_version`。`openid` 已属于其他
+账号、或当前账号已映射到其他 `openid`，均返回明确的 `409`；网关保留原映射并记录待人工处理，绝不覆盖或
+猜测回填。
+
+### `POST /wx/account-link/confirm` 与 `/wx/account-link/unlink`
+
+关联请求同时要求当前 JWT、新的微信 `code`、词鲸邮箱密码和当前版本的主动确认；网关只在服务器内验证密码，
+不会记录、转发或返回密码、微信身份凭据或一次性令牌。数据库 RPC 在一个事务中取得写锁、记录批次/manifest
+与脱敏审计后合并数据；解绑需要新的微信 `code`，将规范账号当前数据复制回微信账号后移除关联。两个端点只返回
+标准 Supabase session 和布尔状态。
 
 > ⚠️ 这条**极易漏**。`msgSecCheck` v2 必传 openid；邮箱登录的用户若没走过 `wx.login`，
 > 网关手里没有 openid，一调 AI 内容就炸。客户端的 `auth.loginWithPassword()` 里已经自动调它。

@@ -11,7 +11,7 @@
       <view class="banner-text">
         <view class="banner-name-row">
           <text class="banner-name">{{displayName}}</text>
-          <text class="tag {{isBound ? 'is-bound' : ''}}">{{isBound ? '已绑词鲸' : '微信用户'}}</text>
+          <text class="tag {{isCijingSession ? 'is-bound' : ''}}">{{isCijingSession ? '词鲸账号登录' : '微信用户'}}</text>
         </view>
         <text class="banner-id hc-mono">ID: {{shortId}}</text>
       </view>
@@ -88,11 +88,20 @@
       <switch checked="{{hideFromLeaderboard}}" color="#9333ea" bindchange="toggleLeaderboard" />
     </view>
 
-    <view class="item" wx:if="{{canBind}}" bindtap="startBind">
+    <view class="item" wx:if="{{canUseCijingLogin && !accountLinked}}" bindtap="startBind">
       <view class="item-icon ic-slate"><image src="/assets/ui/icon-link.svg" /></view>
       <view class="item-text">
-        <text class="item-title">绑定词鲸（CiJing）账号</text>
-        <text class="item-sub">共享 iOS 与 Chrome 扩展生词库</text>
+        <text class="item-title">关联词鲸账号</text>
+        <text class="item-sub">合并学习数据，之后两种登录访问同一账号</text>
+      </view>
+      <text class="chev">›</text>
+    </view>
+
+    <view class="item" wx:if="{{accountLinked}}" bindtap="unlinkAccount">
+      <view class="item-icon ic-slate"><image src="/assets/ui/icon-link.svg" /></view>
+      <view class="item-text">
+        <text class="item-title">解除微信关联</text>
+        <text class="item-sub">复制当前数据回微信账号，之后停止同步</text>
       </view>
       <text class="chev">›</text>
     </view>
@@ -173,19 +182,26 @@
   </view>
 </view>
 
-<!-- 绑定词鲸账号 -->
+<!-- 关联词鲸账号：双重身份验证和主动确认缺一不可。 -->
 <view class="mask" wx:if="{{binding}}" bindtap="closeBind" catchtouchmove="noop">
   <view class="dialog" catchtap="noop">
-    <text class="dlg-title">用词鲸账号登录</text>
-    <text class="dlg-sub">小程序不提供邮箱注册。没有账号请继续用微信登录。</text>
+    <text class="dlg-title">关联词鲸账号</text>
+    <text class="dlg-sub">将验证当前微信和词鲸账号。关联后使用同一份合并数据；解除时会把当前数据复制回微信账号，之后两边不再同步。</text>
     <input class="field" type="text" value="{{bindEmail}}" bindinput="onBindEmail"
            placeholder="输入词鲸邮箱账号" placeholder-class="ph" />
     <input class="field" password value="{{bindPassword}}" bindinput="onBindPassword"
            placeholder="密码" placeholder-class="ph" bindconfirm="confirmBind" />
+    <view class="item is-static link-confirm">
+      <view class="item-text">
+        <text class="item-title">我已阅读并确认</text>
+        <text class="item-sub">我同意合并双方学习数据，并了解解绑后两边将独立变化。</text>
+      </view>
+      <switch checked="{{linkConfirmed}}" color="#9333ea" bindchange="toggleLinkConfirmation" />
+    </view>
     <text class="dlg-err" wx:if="{{bindError}}">{{bindError}}</text>
     <view class="dlg-actions">
       <view class="btn-ghost" bindtap="closeBind">取消</view>
-      <button class="btn-ok" bindtap="confirmBind" loading="{{bindBusy}}">绑定</button>
+      <button class="btn-ok" bindtap="confirmBind" loading="{{bindBusy}}">确认关联</button>
     </view>
   </view>
 </view>

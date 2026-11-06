@@ -118,21 +118,20 @@ python -m pip install -r packages/gateway/requirements.txt
 cp packages/gateway/.env.example packages/gateway/.env
 ```
 
-在 `packages/gateway/.env` 中填入 Supabase、微信小程序和派生密钥配置后，启动开发服务器：
+活词与相邻的词鲸主项目共用认证与数据服务。开发时从词鲸项目读取权威私有配置，而不是使用本仓库 `packages/gateway/.env.example` 的占位值。启动本地网关：
 
 ```bash
-set -a
-source packages/gateway/.env
-set +a
-python -m packages.gateway.dev_server
+npm run dev:gateway
 ```
 
-默认地址为 `http://127.0.0.1:5000`；可通过 `HOST` 和 `PORT` 环境变量调整。小程序在真机或模拟器上访问本地网关时，需要使用局域网可达的地址，或部署到已登记的 HTTPS 域名。
+需要停止网关时运行 `npm run stop:gateway`；它只会停止监听该端口的活词本地 Flask 进程。若启动时设置了自定义 `HUOCI_GATEWAY_PORT`，停止时也传入相同的端口值。
+
+默认地址为 `http://127.0.0.1:5001`；可通过 `HUOCI_GATEWAY_PORT` 调整。小程序在真机或模拟器上访问本地网关时，需要使用局域网可达的地址，或部署到已登记的 HTTPS 域名。
 
 另开一个终端确认服务已经启动：
 
 ```bash
-curl http://127.0.0.1:5000/healthz
+curl --noproxy '*' http://127.0.0.1:5001/healthz
 # {"status":"ok"}
 ```
 

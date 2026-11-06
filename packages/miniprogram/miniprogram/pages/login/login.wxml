@@ -27,7 +27,7 @@
     <view class="acct hc-card">
       <view class="acct-head">
         <text class="acct-label">✓ 当前登录账号</text>
-        <text class="acct-tag">{{isBound ? '已绑定词鲸' : '微信已授权'}}</text>
+        <text class="acct-tag">{{isBound ? '词鲸账号登录' : '微信已授权'}}</text>
       </view>
       <view class="acct-body">
         <view class="avatar">
@@ -174,8 +174,10 @@
         <text class="legal-section">1. 服务说明</text>
         <text class="legal-copy">活词提供生词收录、记忆复习、场景阅读与学习进度同步服务。</text>
         <text class="legal-section">2. 账号与数据</text>
-        <text class="legal-copy">请妥善保管账号信息。小程序会按照个人信息保护政策处理账号与学习数据。</text>
-        <text class="legal-section">3. 使用规范</text>
+        <text class="legal-copy">微信独立账号与词鲸邮箱账号默认相互独立。只有你在微信账号内主动发起关联、完成双重验证并确认后，双方学习数据才会合并并共同访问；解除关联时，当前数据会复制回微信账号，此后双方停止同步并独立变化。</text>
+        <text class="legal-section">3. 账号删除</text>
+        <text class="legal-copy">小程序目前不提供删除账号入口。已关联账号需先解除关联；解绑产生的微信账号数据副本不会因随后删除词鲸账号而一并删除。请在删除前确认需要保留或分别处理的数据。</text>
+        <text class="legal-section">4. 使用规范</text>
         <text class="legal-copy">请勿利用本服务发布违法内容或侵害他人权益。</text>
       </block>
       <block wx:else>

@@ -3,9 +3,7 @@
 // 三条仍然生效的硬约束（跟原型不冲突，原型也是这么画的）：
 //   1. 「词鲸 App…」那两行**不放链接、不放二维码、不放按钮**
 //   2. 没有任何 App 下载引导
-//   3. 绑定词鲸账号必须画「N 个词将被丢弃」+ 二次确认 —— ⚠️ 原型的绑定弹层只要一个邮箱、
-//      没有这一步。这里**保留**二次确认：绑定会把当前微信账号下的词留在原账号，不可逆，
-//      少一步确认丢的是用户的数据，不是一个视觉细节。
+//   3. 关联必须由用户主动发起、明确勾选，并验证微信身份与词鲸账号的双重控制权。
 
 import * as auth from '../../services/auth';
 import * as learning from '../../services/learning';
@@ -34,9 +32,10 @@ Page({
     displayName: '微信用户',
     avatarUrl: '',
     shortId: '—',
-    isBound: false,
-    /** 微信登录的用户没绑过邮箱账号，才显示「绑定词鲸账号」 */
-    canBind: true,
+    isCijingSession: false,
+    /** 仅微信会话可发起关联；已关联账号显示解绑入口。 */
+    canUseCijingLogin: true,
+    accountLinked: false,
     summary: learning.EMPTY_SUMMARY,
     learningCount: 0,
     dailyGoal: 20,
@@ -51,6 +50,7 @@ Page({
     binding: false,
     bindEmail: '',
     bindPassword: '',
+    linkConfirmed: false,
     bindError: '',
     bindBusy: false,
   },
@@ -65,6 +65,9 @@ Page({
     theme.apply(this);
     this.loadLocal();
     void this.load();
+    void auth.getAccountLinkStatus()
+      .then(({ linked }) => this.setData({ accountLinked: linked }))
+      .catch(() => { /* 状态失败不影响学习；操作时仍由服务端校验。 */ });
   },
 
   /** 本地就有的东西先画出来，别等网络 */
@@ -75,8 +78,8 @@ Page({
       displayName: s ? s.displayName : '微信用户',
       avatarUrl: s && s.avatarUrl ? s.avatarUrl : '',
       shortId: s ? s.userId.slice(0, 8) : '—',
-      isBound: s ? s.provider === 'password' : false,
-      canBind: s ? s.provider === 'wechat' : true,
+      isCijingSession: s ? s.provider === 'password' : false,
+      canUseCijingLogin: s ? s.provider === 'wechat' : true,
       cardMode: p.studyCardMode,
       cardModeLabel: CARD_MODE_LABEL[p.studyCardMode],
       hideFromLeaderboard: p.hideFromLeaderboard,
@@ -145,33 +148,17 @@ Page({
     this.setData({ hideFromLeaderboard: on });
   },
 
-  // ---------------- 绑定词鲸账号（兜底入口） ----------------
+  // ---------------- 关联词鲸账号 ----------------
 
   /**
-   * 绑定确认弹窗**必须**画「小程序上的 N 个词将被丢弃」+ 二次确认。
-   *
-   * 为什么会丢：绑定 = 换成词鲸那个 auth user 登录，微信这个匿名 user 的 words 留在原账号下，
-   * 新账号里看不到。这件事不能藏在小字里，它是不可逆的。
+   * 关联在表单内要求主动勾选，并由新的微信 code 和词鲸密码完成双重控制权验证。
    */
   startBind() {
-    const n = this.data.summary.total_words;
-    wx.showModal({
-      title: '绑定词鲸账号',
-      content:
-        n > 0
-          ? `绑定后会切换到你的词鲸账号，当前微信账号下的 ${n} 个词将被丢弃，且无法找回。确定继续吗？`
-          : '绑定后会切换到你的词鲸账号。确定继续吗？',
-      confirmText: '继续绑定',
-      confirmColor: '#e11d48',
-      cancelText: '算了',
-      success: (res) => {
-        if (res.confirm) this.setData({ binding: true, bindError: '' });
-      },
-    });
+    this.setData({ binding: true, bindError: '', linkConfirmed: false });
   },
 
   closeBind() {
-    this.setData({ binding: false, bindEmail: '', bindPassword: '', bindError: '' });
+    this.setData({ binding: false, bindEmail: '', bindPassword: '', bindError: '', linkConfirmed: false });
   },
 
   onBindEmail(e: WechatMiniprogram.Input) {
@@ -182,18 +169,26 @@ Page({
     this.setData({ bindPassword: e.detail.value, bindError: '' });
   },
 
+  toggleLinkConfirmation(e: WechatMiniprogram.SwitchChange) {
+    this.setData({ linkConfirmed: e.detail.value, bindError: '' });
+  },
+
   async confirmBind() {
-    const { bindEmail, bindPassword, bindBusy } = this.data;
+    const { bindEmail, bindPassword, bindBusy, linkConfirmed } = this.data;
     if (bindBusy) return;
     if (!bindEmail || !bindPassword) {
       this.setData({ bindError: '邮箱和密码都要填' });
       return;
     }
+    if (!linkConfirmed) {
+      this.setData({ bindError: '请先勾选并确认数据处理说明' });
+      return;
+    }
     this.setData({ bindBusy: true });
     try {
-      await auth.loginWithPassword(bindEmail, bindPassword);
+      await auth.confirmAccountLink(bindEmail, bindPassword);
       tracker.track(EV.BIND_CIJING, { ok: true });
-      // 换了账号，本地这些全是上一个账号的
+      // 关联后会话已切换到规范账号，本地读取缓存需要重取。
       words.clearCache();
       onboarding.reset();
       void tracker.flush();
@@ -205,13 +200,38 @@ Page({
         bindError:
           err.kind === 'network'
             ? '网络不给力，检查一下再试'
-            : err.kind === 'client' || err.status === 400
-              ? '邮箱或密码不对'
-              : err.message || '绑定失败',
+            // 关联需要同时验证新鲜的微信 code、当前登录态及词鲸账号。
+            // 服务端已经给出了脱敏的具体原因，不能把任何 4xx 都误报成密码错误。
+            : err.message || '关联失败，请稍后重试',
       });
     } finally {
       this.setData({ bindBusy: false });
     }
+  },
+
+  unlinkAccount() {
+    if (this.data.bindBusy) return;
+    wx.showModal({
+      title: '解除微信关联',
+      content: '系统会先把词鲸账号当前的学习数据复制回微信账号。解除后两边停止同步，并各自独立变化。确定继续吗？',
+      confirmText: '确认解绑',
+      confirmColor: '#e11d48',
+      success: async (res) => {
+        if (!res.confirm) return;
+        this.setData({ bindBusy: true });
+        try {
+          await auth.unlinkAccount();
+          words.clearCache();
+          onboarding.reset();
+          wx.showToast({ title: '已解除关联', icon: 'success' });
+          wx.reLaunch({ url: '/pages/today/today' });
+        } catch (e) {
+          wx.showToast({ title: (e as ApiError).message || '解绑失败，请稍后重试', icon: 'none' });
+        } finally {
+          this.setData({ bindBusy: false });
+        }
+      },
+    });
   },
 
   logout() {

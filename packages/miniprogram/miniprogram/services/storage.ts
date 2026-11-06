@@ -2,7 +2,6 @@
 
 export const SK = {
   SESSION: 'hc.session',
-  OPENID: 'hc.openid',
   /** 今日队列的读缓存（T1-c：通勤/地铁是核心场景，纯瘦客户端在这里不可用） */
   PLAN_CACHE: 'hc.cache.plan',
   CARDS_CACHE: 'hc.cache.cards',
