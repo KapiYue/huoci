@@ -68,3 +68,4 @@ packages/miniprogram/project.private.config.json
 # Flutter
 packages/app/.dart_tool/
 packages/app/build/
+packages/gateway/__pycache__/
