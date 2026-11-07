@@ -130,6 +130,15 @@ class WxAttachTests(unittest.TestCase):
         self.assertEqual(response.status_code, 400)
         self.assertNotIn("password", response.get_json()["message"])
 
+    def test_gateway_version_exposes_account_link_protocol(self):
+        response = self.client.post("/wx/version", json={})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.get_json(),
+            {"account_link_protocol": wx.ACCOUNT_LINK_PROTOCOL_VERSION},
+        )
+
     def test_confirm_link_verifies_both_identities_and_returns_only_session(self):
         cijing_session = {"access_token": "access", "refresh_token": "refresh", "expires_in": 3600,
                           "user": {"id": "account-2"}}
@@ -209,12 +218,12 @@ class WxAttachTests(unittest.TestCase):
         self.assertEqual(response.status_code, 409)
         sign_in.assert_not_called()
 
-    def test_confirm_link_reports_a_safe_account_verification_failure(self):
+    def test_confirm_link_preserves_a_safe_account_verification_reason(self):
         with (
             patch.object(wx, "_user_from_token", return_value=self.user),
             patch.object(wx, "_code2session", return_value=self.session),
             patch.object(wx, "_find_identity", return_value={"user_id": "account-1"}),
-            patch.object(wx, "_sign_in", return_value=(400, {"message": "upstream detail"})),
+            patch.object(wx, "_sign_in", return_value=(400, {"error_code": "email_not_confirmed", "message": "upstream detail"})),
         ):
             response = self.client.post(
                 "/wx/account-link/confirm", headers={"Authorization": "Bearer test-session"},
@@ -223,7 +232,26 @@ class WxAttachTests(unittest.TestCase):
             )
 
         self.assertEqual(response.status_code, 401)
-        self.assertEqual(response.get_json()["message"], "词鲸账号验证失败")
+        self.assertEqual(response.get_json()["message"], "词鲸账号尚未完成邮箱验证，请先完成邮箱验证")
+        self.assertNotIn("upstream detail", response.get_json()["message"])
+
+    def test_confirm_link_does_not_expose_upstream_auth_details(self):
+        with (
+            patch.object(wx, "_user_from_token", return_value=self.user),
+            patch.object(wx, "_code2session", return_value=self.session),
+            patch.object(wx, "_find_identity", return_value={"user_id": "account-1"}),
+            patch.object(wx, "_sign_in", return_value=(500, {"message": "secret internal detail", "password": "never-return"})),
+        ):
+            response = self.client.post(
+                "/wx/account-link/confirm", headers={"Authorization": "Bearer test-session"},
+                json={"code": "fresh-wx-code", "email": "member@example.test", "password": "not-logged",
+                      "confirmed": True, "confirmation_version": wx.ACCOUNT_LINK_CONFIRMATION_VERSION},
+            )
+
+        self.assertEqual(response.status_code, 401)
+        self.assertEqual(response.get_json()["message"], "词鲸账号服务暂时不可用，请稍后再试")
+        self.assertNotIn("secret", response.get_json()["message"])
+        self.assertNotIn("password", response.get_json()["message"])
 
     def test_unlink_returns_wechat_session_only_after_link_check(self):
         wechat_session = {"access_token": "access", "refresh_token": "refresh", "expires_in": 3600,

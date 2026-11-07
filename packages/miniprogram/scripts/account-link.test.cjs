@@ -32,6 +32,17 @@ test('关联失败显示网关提供的脱敏原因，而不一概归为密码�
   assert.match(confirm, /err\.message \|\| '关联失败，请稍后重试'/);
   assert.doesNotMatch(confirm, /邮箱或密码不对/);
 });
+test('账号合并前必须确认真机命中的网关协议版本', () => {
+  const auth = read('services/auth.ts');
+  const confirm = functionBody(auth, 'confirmAccountLink');
+  assert.match(confirm, /\/version/);
+  assert.match(confirm, /ACCOUNT_LINK_PROTOCOL_VERSION/);
+  assert.match(confirm, /线上账号服务仍是旧版本/);
+  assert.ok(
+    confirm.indexOf("'/version'") < confirm.indexOf('getWxCode()'),
+    '版本检查必须发生在获取微信 code 和提交合并之前',
+  );
+});
 
 // End of account-link contract tests.
 // EOF

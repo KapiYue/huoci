@@ -28,6 +28,8 @@ test('两个隐私政策入口共用同一事实来源', () => {
   assert.match(read('services/privacy.ts'), /主动发起关联/);
   assert.match(read('services/privacy.ts'), /停止同步/);
   assert.match(read('services/privacy.ts'), /Supabase/);
+  assert.match(read('services/privacy.ts'), /微信授权仅用于本次登录或关联身份核验/);
+  assert.match(read('services/privacy.ts'), /不会获得你的密码或服务端认证凭据/);
   assert.match(read('services/privacy.ts'), /小程序目前不提供删除账号入口/);
   assert.match(read('pages/login/login.wxml'), /解绑产生的微信账号数据副本/);
 });

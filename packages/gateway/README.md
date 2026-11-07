@@ -40,6 +40,11 @@ npm run dev:gateway
 `cijing/server/app.py` 已经是一个能透传 `/auth/v1` `/rest/v1` `/functions/v1` 的代理。
 把本目录的 blueprint 挂上去即可：
 
+> 生产安装边界：只把本目录中需要的蓝图文件安装到
+> `/opt/huoci/cijing/server/huoci_gateway/`，并在覆盖前对暂存文件做语法检查。不要同步本仓库、
+> `packages/gateway/` 整个目录或词鲸的 `server/` 整体目录。具体命令见
+> `docs/gateway-deployment.md` §3.2 与 §10.2。
+
 ```python
 from huoci_gateway.wx_blueprint import wx_bp
 from huoci_gateway.functions_blueprint import functions_bp

@@ -5,6 +5,7 @@
  * 输出只包含检查名称与 PASS/FAIL，绝不输出环境变量、会话、邮箱、用户 ID 或词条内容。
  */
 import fs from 'node:fs';
+import { randomUUID } from 'node:crypto';
 
 const envPath = '/Users/qingmou/Documents/TechFiles/personal/study-ai/cijing/.env';
 const config = Object.fromEntries(
@@ -67,6 +68,19 @@ async function createUser(label) {
 async function addWord(token, term) {
   const row = await call('/rest/v1/rpc/save_word', { method: 'POST', token, body: { p_payload: payload(term) } });
   if (!row?.id) throw new Error('临时学习数据写入失败');
+  return row;
+}
+
+async function addReview(token, wordId, clientEventId) {
+  await call('/rest/v1/rpc/apply_review', {
+    method: 'POST', token,
+    body: {
+      p_word_id: wordId,
+      p_quality: 4,
+      p_exercise_type: 'account-link-e2e',
+      p_client_event_id: clientEventId,
+    },
+  });
 }
 
 async function listTerms(token) {
@@ -93,7 +107,7 @@ try {
   const afterWechat = `e2e-w-after-${run}`;
   const afterCijing = `e2e-c-after-${run}`;
   await addWord(wechatToken, initialWechat);
-  await addWord(cijingToken, initialCijing);
+  const cijingWord = await addWord(cijingToken, initialCijing);
 
   await call('/rest/v1/rpc/hc_execute_account_link', {
     method: 'POST', service: true,
@@ -105,11 +119,29 @@ try {
   const linkedTerms = await listTerms(cijingToken);
   if (!linkedTerms.has(initialWechat) || !linkedTerms.has(initialCijing)) throw new Error('关联后数据未汇入规范账号');
 
+  // 让解绑复制出同一个 client_event_id，覆盖真实账号之前触发 409 的回归场景。
+  await addReview(cijingToken, cijingWord.id, randomUUID());
+
   await call('/rest/v1/rpc/hc_execute_account_link', {
     method: 'POST', service: true,
     body: {
       p_operation: 'unlink', p_wechat_user_id: wechatUserId, p_cijing_user_id: cijingUserId,
       p_requested_by: cijingUserId, p_confirmation_version: 'e2e',
+    },
+  });
+
+  await call('/rest/v1/rpc/hc_execute_account_link', {
+    method: 'POST', service: true,
+    body: {
+      p_operation: 'link', p_wechat_user_id: wechatUserId, p_cijing_user_id: cijingUserId,
+      p_requested_by: wechatUserId, p_confirmation_version: 'e2e-relink',
+    },
+  });
+  await call('/rest/v1/rpc/hc_execute_account_link', {
+    method: 'POST', service: true,
+    body: {
+      p_operation: 'unlink', p_wechat_user_id: wechatUserId, p_cijing_user_id: cijingUserId,
+      p_requested_by: cijingUserId, p_confirmation_version: 'e2e-reunlink',
     },
   });
   await addWord(wechatToken, afterWechat);
@@ -118,7 +150,7 @@ try {
   if (!wechatTerms.has(afterWechat) || wechatTerms.has(afterCijing)) throw new Error('解绑后微信账号未独立写入');
   if (!cijingTerms.has(afterCijing) || cijingTerms.has(afterWechat)) throw new Error('解绑后词鲸账号未独立写入');
 
-  console.log(JSON.stringify({ status: 'PASS', checks: ['link_merge', 'unlink_copy', 'wechat_independent_write', 'cijing_independent_write'] }));
+  console.log(JSON.stringify({ status: 'PASS', checks: ['link_merge', 'unlink_copy', 'relink_duplicate_review_events', 'wechat_independent_write', 'cijing_independent_write'] }));
 } finally {
   await clean();
 }

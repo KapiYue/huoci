@@ -33,6 +33,11 @@ from flask import Blueprint, jsonify, request as flask_request
 wx_bp = Blueprint("huoci_wx", __name__, url_prefix="/wx")
 logger = logging.getLogger(__name__)
 
+# 客户端在执行账号数据合并前必须确认实际命中的网关支持这一版协议。
+# 旧实例或错误部署路径会缺少此值，客户端会明确阻止关联，避免再把旧服务的
+# 模糊 409 当成当前代码产生的结果。
+ACCOUNT_LINK_PROTOCOL_VERSION = "2026-11-06.2"
+
 # 合成邮箱的域。用自有域名的子域，避免撞上真实邮箱，也避免被 Supabase 判为无效域。
 SYNTHETIC_EMAIL_DOMAIN = os.getenv("HUOCI_WX_EMAIL_DOMAIN", "wx.joy-coder.cn")
 TIMEOUT = 10
@@ -136,6 +141,24 @@ def _sign_in(email: str, password: str) -> tuple[int, Any]:
         {"email": email, "password": password},
         _anon_headers(),
     )
+
+
+def _account_verification_message(status: int, data: Any) -> str:
+    """将认证端的错误转换为可展示的脱敏原因。"""
+    error_code = ""
+    if isinstance(data, dict):
+        error_code = str(data.get("error_code") or data.get("code") or "").lower()
+    if error_code in {"email_not_confirmed", "email_not_verified"}:
+        return "词鲸账号尚未完成邮箱验证，请先完成邮箱验证"
+    if error_code in {"user_not_found", "invalid_credentials", "invalid_grant", "invalid_login_credentials"}:
+        return "词鲸账号或密码不正确，请检查后重试"
+    if status == 429 or error_code in {"over_request_rate_limit", "too_many_requests"}:
+        return "词鲸账号验证请求过于频繁，请稍后再试"
+    if status >= 500:
+        return "词鲸账号服务暂时不可用，请稍后再试"
+    if status in (400, 401):
+        return "词鲸账号验证失败，请检查账号信息后重试"
+    return "词鲸账号验证失败，请稍后再试"
 
 
 def _find_identity(openid: str) -> dict[str, Any] | None:
@@ -432,6 +455,12 @@ def account_link_status():
 ACCOUNT_LINK_CONFIRMATION_VERSION = "2026-11-06"
 
 
+@wx_bp.post("/version")
+def gateway_version():
+    """返回非敏感协议版本，供客户端在账号合并前做部署一致性检查。"""
+    return jsonify({"account_link_protocol": ACCOUNT_LINK_PROTOCOL_VERSION})
+
+
 @wx_bp.post("/account-link/confirm")
 def confirm_account_link():
     """验证微信新 code、词鲸密码和主动确认后，在数据库内完成关联。"""
@@ -458,7 +487,7 @@ def confirm_account_link():
         status, cijing_session = _sign_in(email, password)
         cijing_user_id = str(((cijing_session or {}).get("user") or {}).get("id") or "")
         if status != 200 or not cijing_user_id or cijing_user_id == str(wechat_user["id"]):
-            return jsonify({"message": "词鲸账号验证失败"}), 401
+            return jsonify({"message": _account_verification_message(status, cijing_session)}), 401
         wechat_user_id = str(wechat_user["id"])
         linked_cijing_user_id = _find_linked_cijing_user(wechat_user_id)
         linked_wechat_user_id = _find_linked_wechat_user(cijing_user_id)
@@ -598,7 +627,7 @@ def _access_token() -> str:
     with urlrequest.urlopen(f"https://api.weixin.qq.com/cgi-bin/token?{params}", timeout=TIMEOUT) as resp:
         data = json.loads(resp.read() or b"{}")
     if not data.get("access_token"):
-        raise RuntimeError(f"取 access_token 失败：{data}")
+        raise RuntimeError("内容检测服务凭据获取失败")
     _token_cache["value"] = data["access_token"]
     _token_cache["expires_at"] = now + int(data.get("expires_in", 7200)) - 300
     return str(data["access_token"])

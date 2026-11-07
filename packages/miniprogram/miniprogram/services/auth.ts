@@ -27,6 +27,7 @@ interface WxLoginResponse { session: SupabaseTokenResponse; }
 interface AccountLinkResponse { session: SupabaseTokenResponse; linked: boolean; }
 
 export const ACCOUNT_LINK_CONFIRMATION_VERSION = '2026-11-06';
+export const ACCOUNT_LINK_PROTOCOL_VERSION = '2026-11-06.2';
 
 function toSession(r: SupabaseTokenResponse, provider: Session['provider']): Session {
   return {
@@ -104,8 +105,9 @@ export async function attachOpenid(): Promise<void> {
   try {
     const code = await getWxCode();
     await gw.wxApi<{ idempotent: boolean }>('/attach', { code });
-  } catch (e) {
-    console.warn('[auth] attachOpenid 失败，微信身份映射暂未补齐', e);
+  } catch {
+    // 只记录固定事件名；ApiError.data 可能携带上游响应，禁止把它写入客户端日志。
+    console.warn('[auth] attachOpenid 失败，微信身份映射暂未补齐');
   }
 }
 
@@ -119,6 +121,17 @@ export async function getAccountLinkStatus(): Promise<{ linked: boolean }> {
  * 密码只交给认证端点，不写入存储、日志或错误消息。
  */
 export async function confirmAccountLink(email: string, password: string): Promise<Session> {
+  // 账号合并前先确认真机实际命中的网关版本。服务器若仍是旧进程、文件装到
+  // 错误路径或流量落到旧实例，这里直接报告部署错误，不再伪装成关联冲突。
+  try {
+    const version = await gw.wxApi<{ account_link_protocol?: string }>('/version', {}, true);
+    if (version.account_link_protocol !== ACCOUNT_LINK_PROTOCOL_VERSION) {
+      throw new ApiError('server', 503, '线上账号服务版本未更新，请先完成网关部署');
+    }
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 503) throw error;
+    throw new ApiError('server', 503, '线上账号服务仍是旧版本，请先更新并重启网关', error);
+  }
   const code = await getWxCode();
   const response = await gw.wxApi<AccountLinkResponse>('/account-link/confirm', {
     code,
