@@ -16,7 +16,7 @@
       <sub>阅读、查词、收词、复习与词库管理</sub>
     </td>
     <td width="50%" align="center" valign="top">
-      <a href="https://youtube.com/shorts/if3N3gfCQ_Q">
+      <a href="https://youtu.be/LVROVUE4__I">
         <img src="https://github.com/user-attachments/assets/1d0e068f-6eca-499b-b244-272d730cd963" alt="词鲸与活词跨端互通演示">
       </a><br>
       <b>词鲸 × 活词：跨端生词闭环</b><br>

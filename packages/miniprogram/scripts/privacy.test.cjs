@@ -23,8 +23,9 @@ test('两个隐私政策入口共用同一事实来源', () => {
   assert.match(read('pages/login/login.ts'), /PRIVACY_SECTIONS/);
   assert.match(read('pages/profile/profile.ts'), /PRIVACY_SECTIONS/);
   assert.doesNotMatch(read('pages/login/login.wxml'), /<block\s+wx:else\s+wx:for=/);
-  assert.match(read('services/privacy.ts'), /不会程序化读取剪贴板/);
-  assert.match(read('services/privacy.ts'), /功能使用事件/);
+  assert.match(read('services/privacy.ts'), /写入系统剪贴板/);
+  assert.match(read('services/privacy.ts'), /不会读取或上传你原有的剪贴板内容/);
+  assert.match(read('services/privacy.ts'), /操作日志和功能使用事件/);
   assert.match(read('services/privacy.ts'), /主动发起关联/);
   assert.match(read('services/privacy.ts'), /停止同步/);
   assert.match(read('services/privacy.ts'), /Supabase/);
