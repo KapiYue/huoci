@@ -1,0 +1,6 @@
+schema: spec-driven
+project: huoci
+language: zh-CN
+
+# Change 包只描述待审阅的改动；实现、生产部署和任何账号数据操作必须由
+# current-task.md 中的用户授权单独开启。
