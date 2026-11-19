@@ -9,7 +9,6 @@
 // `redirect` 参数：收到词包分享的未登录用户先来这里，登录完**回到那一屏**，不丢回首页。
 
 import * as auth from '../../services/auth';
-import { select } from '../../services/gateway';
 import * as tracker from '../../services/tracker';
 import * as learning from '../../services/learning';
 import * as words from '../../services/words';
@@ -23,7 +22,7 @@ import { PRIVACY_SECTIONS } from '../../services/privacy';
 function explain(e: unknown, wrongCredential: string): string {
   const err = e as ApiError;
   if (err.kind === 'network') return '网络不给力，检查一下再试';
-  if (err.kind === 'client' || err.status === 400) return wrongCredential;
+  if (err.status === 400) return wrongCredential;
   return err.message || '登录失败，稍后再试';
 }
 
@@ -149,12 +148,14 @@ Page({
     this.setData({ loading: true, error: '' });
     try {
       await auth.loginWithWeChat({ nickname: this.data.wechatNickname.trim() || '微信用户' });
+      // 即使要回原操作现场，也先恢复当前账号的服务端首启状态，避免 tab 守卫误拦。
+      const needsOnboarding = await this.needsOnboarding();
       tracker.track(EV.LOGIN_SUCCESS, { provider: 'wechat' });
       wx.setStorageSync('hc.login.celebrate', Date.now());
       this.setData({ showWeChatAuthSheet: false });
       // 游客主动触发登录时先回原操作现场，不在中间插入首启流程。
       if (this._backAfterLogin || this._redirect) this.go(false);
-      else this.go(await this.needsOnboarding());
+      else this.go(needsOnboarding);
     } catch (e) {
       this.setData({ error: explain(e, '微信登录没通过，请重试') });
     } finally {
@@ -190,14 +191,7 @@ Page({
    * 服务端为准、本地兜底：读不到（离线、超时）才退回本地记录，最坏是多问一次 40 秒。
    */
   async needsOnboarding(): Promise<boolean> {
-    try {
-      const rows = await select<{ onboarding_done_at: string | null }[]>(
-        'hc_profiles?select=onboarding_done_at&limit=1'
-      );
-      return !rows[0]?.onboarding_done_at;
-    } catch {
-      return !onboarding.isDone();
-    }
+    return onboarding.needsOnboarding();
   },
 
   go(toOnboarding: boolean) {

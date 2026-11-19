@@ -65,6 +65,7 @@ export function clearAccountData(): void {
     SK.LEADERBOARD_NOTICE,
     SK.READER_LAST,
     'hc.onboarding',
+    'hc.onboarding.completion',
     `${SK.WORDS_CACHE}.recent`,
     `${SK.WORDS_CACHE}.due`,
     `${SK.WORDS_CACHE}.activated`,

@@ -30,6 +30,10 @@ export const ACCOUNT_LINK_CONFIRMATION_VERSION = '2026-11-06';
 export const ACCOUNT_LINK_PROTOCOL_VERSION = '2026-11-06.2';
 
 function toSession(r: SupabaseTokenResponse, provider: Session['provider']): Session {
+  if (!r || !r.access_token || !r.refresh_token || !r.user?.id ||
+      !Number.isFinite(r.expires_in) || r.expires_in <= 0) {
+    throw new ApiError('server', 502, '登录服务未返回完整会话，请稍后重试');
+  }
   return {
     accessToken: r.access_token,
     refreshToken: r.refresh_token,
@@ -47,19 +51,35 @@ function toSession(r: SupabaseTokenResponse, provider: Session['provider']): Ses
 /** 切换账号时先清除上一账号的可缓存数据；同一账号刷新会话时不动缓存。 */
 function saveSession(session: Session): void {
   const previous = gw.getSession();
+  // 登录态不能使用 best-effort 存储：写入失败必须留在登录页，不能假成功后再被守卫送回。
+  try {
+    store.writeRequired(store.SK.SESSION, session);
+  } catch {
+    throw new ApiError('client', 0, '登录状态无法保存，请检查微信存储空间后重试');
+  }
   if (previous && previous.userId !== session.userId) store.clearAccountData();
-  gw.setSession(session);
 }
 
 /** wx.login 拿一次性 code。code 五分钟有效且只能用一次。 */
 function getWxCode(): Promise<string> {
   return new Promise((resolve, reject) => {
     wx.login({
+      timeout: 15000,
       success: (res) => {
         if (res.code) resolve(res.code);
-        else reject(new ApiError('client', 0, '微信登录失败，请重试'));
+        else reject(new ApiError('client', 0, '未取得微信登录凭证，请重新点击登录'));
       },
-      fail: () => reject(new ApiError('network', 0, '微信登录失败，请检查网络')),
+      fail: (error) => {
+        // 仅在内存中识别错误类别，不记录原文（可能含微信身份、时间戳或凭据）。
+        const message = String(error.errMsg || '').toLowerCase();
+        const credentialMissing = /access_token.*(?:missing|expired|invalid)|需要重新登录/.test(message);
+        const timedOut = /timeout|超时/.test(message);
+        const reason = credentialMissing ? 'wechat_auth_unavailable' : timedOut ? 'timeout' : 'failed';
+        console.warn('[auth] wx_login', reason);
+        reject(new ApiError('client', 0, credentialMissing
+          ? '微信登录环境已失效；开发者工具请重新登录，手机请重新打开小程序后重试'
+          : timedOut ? '微信登录超时，请稍后重新点击登录' : '未取得微信登录凭证，请检查微信连接后重试'));
+      },
     });
   });
 }

@@ -299,10 +299,68 @@ def _execute_account_link(operation: str, wechat_user_id: str, cijing_user_id: s
     return data
 
 
-def _admin_user(user_id: str) -> dict[str, Any] | None:
+def _admin_user(user_id: str) -> tuple[int, Any]:
     """仅服务端按 UUID 取认证用户；调用方永远不能指定要签发会话的 user_id。"""
-    status, data = _get_json(f"{_supabase()}/auth/v1/admin/users/{parse.quote(user_id, safe='')}", _service_headers())
-    return data if status == 200 and isinstance(data, dict) else None
+    return _get_json(f"{_supabase()}/auth/v1/admin/users/{parse.quote(user_id, safe='')}", _service_headers())
+
+
+_LINK_SESSION_ERROR_CODES = frozenset({
+    "not_admin", "otp_disabled", "over_request_rate_limit", "too_many_requests",
+    "user_not_found", "email_not_confirmed", "invalid_credentials",
+})
+_LINKED_SESSION_CLIENT_MESSAGE = "关联账号登录暂时不可用，请稍后再试"
+_GENERATE_LINK_TYPE = "magiclink"
+
+
+def _log_link_session_failure(stage: str, status: int | None = None, data: Any = None,
+                              fallback: str = "invalid_response") -> None:
+    """Only fixed stage/code values and an HTTP status may enter the log."""
+    code = data.get("error_code") or data.get("code") if isinstance(data, dict) else None
+    safe_code = code if isinstance(code, str) and code in _LINK_SESSION_ERROR_CODES else fallback
+    safe_status = status if type(status) is int and 100 <= status <= 599 else "unavailable"
+    logger.warning("wx_link_session_failed stage=%s http_status=%s error_code=%s",
+                   stage, safe_status, safe_code)
+
+
+def _linked_session_error() -> RuntimeError:
+    """返回不依赖上游细节的、稳定客户端提示。"""
+    return RuntimeError(_LINKED_SESSION_CLIENT_MESSAGE)
+
+
+def _is_nonempty_string(value: Any) -> bool:
+    return isinstance(value, str) and bool(value.strip())
+
+
+def _is_refreshable_session(session: Any, expected_user_id: str) -> bool:
+    """只接受 verify 返回的标准可刷新会话，不能把半成品响应交给客户端。"""
+    if not isinstance(session, dict):
+        return False
+    user = session.get("user")
+    return (
+        _is_nonempty_string(session.get("access_token"))
+        and _is_nonempty_string(session.get("refresh_token"))
+        and session.get("token_type") == "bearer"
+        and isinstance(session.get("expires_in"), int)
+        and not isinstance(session.get("expires_in"), bool)
+        and session["expires_in"] > 0
+        and isinstance(user, dict)
+        and str(user.get("id") or "") == expected_user_id
+    )
+
+
+def _generated_link_fields(generated: Any) -> tuple[Any, Any, Any]:
+    """兼容 GoTrue 管理接口的扁平与嵌套成功响应，绝不记录其中的值。"""
+    if not isinstance(generated, dict):
+        return None, None, None
+    properties = generated.get("properties")
+    properties = properties if isinstance(properties, dict) else {}
+    user = generated.get("user")
+    user = user if isinstance(user, dict) else {}
+    return (
+        generated.get("hashed_token") or properties.get("hashed_token"),
+        generated.get("verification_type") or properties.get("verification_type"),
+        generated.get("id") or user.get("id"),
+    )
 
 
 def _issue_mapped_session(user_id: str) -> dict[str, Any]:
@@ -311,31 +369,52 @@ def _issue_mapped_session(user_id: str) -> dict[str, Any]:
     generate_link 的 hashed_token 和 verify 返回的 session 都不落盘、不记录日志。这个函数只能在
     hc_wechat_identities 的服务端查询已确认 user_id 后调用，绝不接受客户端提供的 ID 或邮箱。
     """
-    user = _admin_user(user_id)
+    try:
+        lookup_status, lookup_data = _admin_user(user_id)
+    except Exception:  # noqa: BLE001 -- upstream exceptions may contain URLs or credentials
+        _log_link_session_failure("linked_target_lookup", fallback="transport_error")
+        raise _linked_session_error() from None
+    user = lookup_data if lookup_status == 200 and isinstance(lookup_data, dict) else None
     email = str((user or {}).get("email") or "").strip()
     if not email:
-        raise RuntimeError("关联账号缺少可用登录邮箱")
+        _log_link_session_failure("linked_target_lookup", lookup_status, lookup_data,
+                                  fallback="missing_email" if lookup_status == 200 else "lookup_failed")
+        raise _linked_session_error()
 
-    status, generated = _post_json(
-        f"{_supabase()}/auth/v1/admin/generate_link",
-        {"type": "magiclink", "email": email},
-        _service_headers(),
-    )
-    properties = (generated or {}).get("properties") if isinstance(generated, dict) else None
-    token_hash = (properties or {}).get("hashed_token") if isinstance(properties, dict) else None
-    verification_type = (properties or {}).get("verification_type") if isinstance(properties, dict) else None
-    if status not in (200, 201) or not token_hash or not verification_type:
-        raise RuntimeError("无法签发关联账号会话")
+    try:
+        status, generated = _post_json(
+            f"{_supabase()}/auth/v1/admin/generate_link",
+            {"type": _GENERATE_LINK_TYPE, "email": email},
+            _service_headers(),
+        )
+    except Exception:  # noqa: BLE001 -- never log the upstream exception
+        _log_link_session_failure("generate_link", fallback="transport_error")
+        raise _linked_session_error() from None
 
-    status, session = _post_json(
-        f"{_supabase()}/auth/v1/verify",
-        {"token_hash": token_hash, "type": verification_type},
-        _anon_headers(),
-    )
-    if status != 200 or not isinstance(session, dict) or not ((session.get("user") or {}).get("id")):
-        raise RuntimeError("无法兑换关联账号会话")
-    if str((session.get("user") or {}).get("id")) != user_id:
-        raise RuntimeError("关联账号会话校验失败")
+    # GoTrue 版本会返回扁平字段，或将一次性凭据放进 properties、目标用户放进 user。
+    # 三项必须完整且与本次已验证的关联目标一致，才允许把一次性凭据交给 /verify。
+    token_hash, verification_type, generated_user_id = _generated_link_fields(generated)
+    if (
+        status != 200
+        or not _is_nonempty_string(token_hash)
+        or verification_type != _GENERATE_LINK_TYPE
+        or str(generated_user_id or "") != user_id
+    ):
+        _log_link_session_failure("generate_link", status, generated)
+        raise _linked_session_error()
+
+    try:
+        status, session = _post_json(
+            f"{_supabase()}/auth/v1/verify",
+            {"token_hash": token_hash, "type": verification_type},
+            _anon_headers(),
+        )
+    except Exception:  # noqa: BLE001 -- never log the upstream exception
+        _log_link_session_failure("verify_link", fallback="transport_error")
+        raise _linked_session_error() from None
+    if status != 200 or not _is_refreshable_session(session, user_id):
+        _log_link_session_failure("verify_link", status, session)
+        raise _linked_session_error()
     return session
 
 

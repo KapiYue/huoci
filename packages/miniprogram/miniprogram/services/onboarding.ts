@@ -12,7 +12,7 @@
 //    `PATCH /rest/v1/<table>`，小程序**物理上写不了任何表**（`design.md` §11 ③/④）。
 
 import * as store from './storage';
-import { rpc } from './gateway';
+import { rpc, select, getSession } from './gateway';
 import basePack from './baseWords.generated';
 import {
   parseBasePack,
@@ -31,6 +31,26 @@ interface BasePack {
 }
 
 export const SK_ONBOARDING = 'hc.onboarding';
+const SK_COMPLETION = 'hc.onboarding.completion';
+
+/** 服务端已完成只恢复标记，不伪造播种结果，也不触发任何学习数据写入。 */
+export async function needsOnboarding(): Promise<boolean> {
+  const session = getSession();
+  if (!session) return true;
+  try {
+    const rows = await select<{ user_id: string; onboarding_done_at: string | null }[]>(
+      `hc_profiles?select=user_id,onboarding_done_at&user_id=eq.${encodeURIComponent(session.userId)}&limit=1`
+    );
+    // 查询期间若切换账号，不能把结果放进新账号的缓存。
+    if (getSession()?.userId !== session.userId) return true;
+    const completed = rows[0]?.user_id === session.userId && !!rows[0]?.onboarding_done_at;
+    if (completed) store.write(SK_COMPLETION, { userId: session.userId });
+    else store.remove(SK_COMPLETION);
+    return !completed;
+  } catch {
+    return !isDone();
+  }
+}
 
 export interface OnboardingResult {
   /** 仅埋点用，**不影响任何算法**（§5.3 S1 明确写了要诚实标注） */
@@ -136,11 +156,15 @@ export async function sync(): Promise<boolean> {
 
 /** 本地视角的「首启做完了没」。服务端视角在 login.ts 的 needsOnboarding()。 */
 export function isDone(): boolean {
-  return read() !== null;
+  const session = getSession();
+  const completed = store.read<{ userId: string } | null>(SK_COMPLETION, null);
+  // 邮箱入口按原有产品约定跳过首启；微信用户使用当前账号的本地结果或服务端完成标记。
+  return !!session && (session.provider === 'password' || read() !== null || completed?.userId === session.userId);
 }
 
 export function reset(): void {
   store.remove(SK_ONBOARDING);
+  store.remove(SK_COMPLETION);
 }
 
 /**
@@ -152,6 +176,7 @@ export function reset(): void {
  * ⚠️ 未登录不拦：那是登录页的事，两件事不要混在一个守卫里。
  */
 export function guard(): boolean {
+  if (!getSession()) return false;
   if (isDone()) return false;
   wx.reLaunch({ url: '/pages/onboarding/onboarding' });
   return true;
