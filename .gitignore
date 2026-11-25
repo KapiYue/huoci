@@ -34,6 +34,10 @@ tools/dict-builder/reports/
 
 # 本地视频制作：原始录屏、剪辑分段与导出预览均不进入仓库
 deliverables/video-preview/
+deliverables/3record.mp4
+deliverables/huoci-video-template-mvp/
+generated_images/
+video_templates/
 
 # dict-builder：原始词典与中间产物体积巨大，不进仓库
 tools/dict-builder/data/
